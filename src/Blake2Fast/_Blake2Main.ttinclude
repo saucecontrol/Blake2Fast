@@ -1,0 +1,265 @@
+﻿using System;
+using System.Runtime.CompilerServices;
+
+#if FAST_ENDIAN
+using System.Buffers.Binary;
+#endif
+#if FAST_SPAN
+using System.Runtime.InteropServices;
+#endif
+#if USE_INTRINSICS
+using System.Runtime.Intrinsics.X86;
+#endif
+
+namespace SauceControl.Blake2Fast
+{
+	unsafe internal partial struct Blake2<#= alg.suffix #>Context : IBlake2Incremental
+	{
+		public const int WordSize = sizeof(<#= alg.wtype #>);
+		public const int BlockWords = 16;
+		public const int BlockBytes = BlockWords * WordSize;
+		public const int HashWords = 8;
+		public const int HashBytes = HashWords * WordSize;
+		public const int MaxKeyBytes = HashBytes;
+<#
+		//public const int SaltBytes = 2 * WordSize;
+		//public const int PersonalizationBytes = 2 * WordSize;
+#>
+
+		private static readonly <#= alg.wtype #>[] iv = new[] {
+			<#= string.Format(alg.ivfmt, alg.iv[0]) #>, <#= string.Format(alg.ivfmt, alg.iv[1]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[2]) #>, <#= string.Format(alg.ivfmt, alg.iv[3]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[4]) #>, <#= string.Format(alg.ivfmt, alg.iv[5]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[6]) #>, <#= string.Format(alg.ivfmt, alg.iv[7]) #>
+		};
+
+		private fixed byte b[BlockBytes];
+		private fixed <#= alg.wtype #> h[HashWords];
+		private fixed <#= alg.wtype #> t[2];
+		private fixed <#= alg.wtype #> f[2];
+		private uint c;
+		private uint outlen;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void addLength(uint len)
+		{
+			this.t[0] += len;
+			if (this.t[0] < len)
+				this.t[1]++;
+		}
+
+		unsafe private static void compress(Blake2<#= alg.suffix #>Context* s, byte* data)
+		{
+			<#= alg.wtype #>* m = (<#= alg.wtype #>*)data;
+
+#if FAST_ENDIAN
+			if (!BitConverter.IsLittleEndian)
+			{
+				var span = new ReadOnlySpan<byte>(data, BlockBytes);
+				m = (<#= alg.wtype #>*)s->b;
+				for (int i = 0; i < BlockWords; i++)
+					m[i] = BinaryPrimitives.ReadUInt<#= alg.bits #>LittleEndian(span.Slice(i * WordSize, WordSize));
+			}
+#endif
+
+#if USE_INTRINSICS
+			if (Sse.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
+			mixSse41(s, m);
+			else
+#endif
+			mixScalar(s, m);
+		}
+
+#if FAST_SPAN
+		public void Init(int outlen = HashBytes, ReadOnlySpan<byte> key = default)
+#else
+		public void Init(int outlen = HashBytes, byte[] key = null)
+#endif
+		{
+#if !FAST_ENDIAN
+			if (!BitConverter.IsLittleEndian)
+				throw new PlatformNotSupportedException("Big-endian platforms not supported");
+#endif
+
+			if (outlen == 0 || (uint)outlen > HashBytes)
+				throw new ArgumentOutOfRangeException($"Value must be between 1 and {HashBytes}", nameof(outlen));
+
+#if !FAST_SPAN
+			key = key ?? Array.Empty<byte>();
+#endif
+			uint keylen = (uint)key.Length;
+			if (keylen > MaxKeyBytes)
+				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
+
+			Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref this.h[0]), ref Unsafe.As<<#= alg.wtype #>, byte>(ref iv[0]), HashBytes);
+			this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ (uint)outlen;
+			this.outlen = (uint)outlen;
+
+<#
+			// Salt and Personalization support can be added with this code,
+			// but I didn't want to deal with all the extra overloads and parameter validation
+			/*
+			if ((salt.Length > 0)
+			{
+				ref [#= alg.wtype #] rs = ref Unsafe.As<byte, [#= alg.wtype #]>(ref salt[0]);
+				this.h[4] ^= rs;
+				this.h[5] ^= Unsafe.Add(ref rs, 1);
+			}
+			if ((personalization.Length > 0)
+			{
+				ref [#= alg.wtype #] rp = ref Unsafe.As<byte, [#= alg.wtype #]>(ref personalization[0]);
+				this.h[6] ^= rp;
+				this.h[7] ^= Unsafe.Add(ref rp, 1);
+			}
+			*/
+
+#>
+			if (keylen > 0)
+			{
+#if FAST_SPAN
+				Unsafe.CopyBlock(ref this.b[0], ref MemoryMarshal.GetReference(key), keylen);
+#else
+				Unsafe.CopyBlock(ref this.b[0], ref key[0], keylen);
+#endif
+				c = BlockBytes;
+			}
+		}
+
+#if FAST_SPAN
+		public void Update(ReadOnlySpan<byte> data)
+#else
+		public void Update(byte[] data)
+#endif
+		{
+#if !FAST_SPAN
+			data = data ?? Array.Empty<byte>();
+#endif
+			uint inlen = (uint)data.Length;
+			uint clen = 0u;
+			uint blockrem = BlockBytes - c;
+
+			if ((c > 0u) && (inlen > blockrem))
+			{
+				if (blockrem > 0)
+				{
+#if FAST_SPAN
+					Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(data), blockrem);
+#else
+					Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[0], blockrem);
+#endif
+				}
+				addLength(BlockBytes);
+				fixed (Blake2<#= alg.suffix #>Context* s = &this)
+					compress(s, s->b);
+
+				clen += blockrem;
+				inlen -= blockrem;
+				c = 0u;
+			}
+
+			if (inlen + clen > BlockBytes)
+			{
+				fixed (byte* pdata = &data[0])
+				fixed (Blake2<#= alg.suffix #>Context* s = &this)
+				while (inlen > BlockBytes)
+				{
+					addLength(BlockBytes);
+					compress(s, pdata + clen);
+
+					clen += BlockBytes;
+					inlen -= BlockBytes;
+				}
+				c = 0u;
+			}
+
+			if (inlen > 0)
+			{
+#if FAST_SPAN
+				Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(data.Slice((int)clen)), inlen);
+#else
+				Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[clen], inlen);
+#endif
+				c += inlen;
+			}
+		}
+
+		public byte[] Finish()
+		{
+			if (this.f[0] != 0)
+				throw new InvalidOperationException(nameof(Finish) + " has already been used.  It cannot be called again on this instance.");
+
+			if (c < BlockBytes)
+				Unsafe.InitBlockUnaligned(ref this.b[c], 0, BlockBytes - c);
+
+			addLength(c);
+			this.f[0] = unchecked((<#= alg.wtype #>)~0);
+			fixed (Blake2<#= alg.suffix #>Context* s = &this)
+				compress(s, s->b);
+
+#if FAST_ENDIAN
+			if (!BitConverter.IsLittleEndian)
+			{
+				var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<<#= alg.wtype #>, byte>(ref this.h[0]), HashBytes);
+				for (int i = 0; i < HashWords; i++)
+					this.h[i] = BinaryPrimitives.ReadUInt<#= alg.bits #>LittleEndian(span.Slice(i * WordSize, WordSize));
+			}
+#endif
+
+			var hash = new byte[outlen];
+			Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<<#= alg.wtype #>, byte>(ref this.h[0]), outlen);
+
+			this = default;
+			return hash;
+		}
+	}
+
+	public static class Blake2<#= alg.suffix #>
+	{
+#if FAST_SPAN
+		unsafe public static byte[] ComputeHash(ReadOnlySpan<byte> data) => ComputeHash(Blake2<#= alg.suffix #>Context.HashBytes, ReadOnlySpan<byte>.Empty, data);
+
+		unsafe public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> data) => ComputeHash(Blake2<#= alg.suffix #>Context.HashBytes, key, data);
+
+		unsafe public static byte[] ComputeHash(int outlen, ReadOnlySpan<byte> data) => ComputeHash(outlen, ReadOnlySpan<byte>.Empty, data);
+
+		unsafe public static byte[] ComputeHash(int outlen, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data)
+#else
+		unsafe public static byte[] ComputeHash(byte[] data) => ComputeHash(Blake2<#= alg.suffix #>Context.HashBytes, Array.Empty<byte>(), data);
+
+		unsafe public static byte[] ComputeHash(byte[] key, byte[] data) => ComputeHash(Blake2<#= alg.suffix #>Context.HashBytes, key, data);
+
+		unsafe public static byte[] ComputeHash(int outlen, byte[] data) => ComputeHash(outlen, Array.Empty<byte>(), data);
+
+		unsafe public static byte[] ComputeHash(int outlen, byte[] key, byte[] data)
+#endif
+		{
+			var ctx = default(Blake2<#= alg.suffix #>Context);
+			ctx.Init(outlen, key);
+			ctx.Update(data);
+			return ctx.Finish();
+		}
+
+#if FAST_SPAN
+		unsafe public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(Blake2<#= alg.suffix #>Context.HashBytes, ReadOnlySpan<byte>.Empty);
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(Blake2<#= alg.suffix #>Context.HashBytes, key);
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen) => CreateIncrementalHasher(outlen, ReadOnlySpan<byte>.Empty);
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen, ReadOnlySpan<byte> key)
+#else
+		unsafe public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(Blake2<#= alg.suffix #>Context.HashBytes, Array.Empty<byte>());
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(byte[] key) => CreateIncrementalHasher(Blake2<#= alg.suffix #>Context.HashBytes, key);
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen) => CreateIncrementalHasher(outlen, Array.Empty<byte>());
+
+		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen, byte[] key)
+#endif
+		{
+			var ctx = default(Blake2<#= alg.suffix #>Context);
+			ctx.Init(outlen, key);
+			return ctx;
+		}
+	}
+}

@@ -1,0 +1,39 @@
+﻿<#+
+	struct b2alg
+	{
+		public int bits;
+		public int rounds;
+		public string suffix;
+		public string wtype;
+		public string ivfmt;
+		public ulong[] iv;
+	}
+
+	static b2alg b2b = new b2alg {
+		bits = 64,
+		rounds = 12,
+		suffix = "b",
+		wtype = "ulong",
+		ivfmt = "0x{0:X16}ul",
+		iv = new[] {
+			0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
+			0x3C6EF372FE94F82Bul, 0xA54FF53A5F1D36F1ul,
+			0x510E527FADE682D1ul, 0x9B05688C2B3E6C1Ful,
+			0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
+		}
+	};
+
+	static b2alg b2s = new b2alg {
+		bits = 32,
+		rounds = 10,
+		suffix = "s",
+		wtype = "uint",
+		ivfmt = "0x{0:X8}u",
+		iv = new[] {
+			0x6A09E667ul, 0xBB67AE85ul,
+			0x3C6EF372ul, 0xA54FF53Aul,
+			0x510E527Ful, 0x9B05688Cul,
+			0x1F83D9ABul, 0x5BE0CD19ul
+		}
+	};
+#>

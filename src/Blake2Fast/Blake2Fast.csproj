@@ -1,0 +1,107 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SauceControl.Blake2Fast</RootNamespace>
+    <AssemblyName>SauceControl.Blake2Fast</AssemblyName>
+    <AssemblyTitle>Blake2Fast</AssemblyTitle>
+    <TargetFrameworks>netstandard1.3;netcoreapp2.1</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <LangVersion>latest</LangVersion>
+    <VersionPrefix>0.1.0-rc1</VersionPrefix>
+    <Authors>Clinton Ingram</Authors>
+    <Product>Blake2Fast</Product>
+    <Description>Optimized implementations of the Blake2b and Blake2s hashing algorithms.  Uses SSE2-SSE4.1 intrinsics support on .NET Core 2.1</Description>
+    <PackageTags>Blake2 Hash Blake2b Blake2s SSE SIMD</PackageTags>
+    <Copyright>Copyright © 2018 Clinton Ingram</Copyright>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
+    <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
+    <PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/saucecontrol/Blake2Fast</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/license</PackageLicenseUrl>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
+    <DefineConstants>$(DefineConstants);FAST_ENDIAN;FAST_SPAN;USE_INTRINSICS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">
+    <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0-rc1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp2.1'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Blake2b.cs">
+      <DependentUpon>Blake2b.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2bScalar.cs">
+      <DependentUpon>Blake2bScalar.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2bSse4.cs">
+      <DependentUpon>Blake2bSse4.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2s.cs">
+      <DependentUpon>Blake2s.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2sScalar.cs">
+      <DependentUpon>Blake2sScalar.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2sSse4.cs">
+      <DependentUpon>Blake2sSse4.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Blake2b.tt">
+      <LastGenOutput>Blake2b.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2bScalar.tt">
+      <LastGenOutput>Blake2bScalar.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2bSse4.tt">
+      <LastGenOutput>Blake2bSse4.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2s.tt">
+      <LastGenOutput>Blake2s.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2sScalar.tt">
+      <LastGenOutput>Blake2sScalar.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2sSse4.tt">
+      <LastGenOutput>Blake2sSse4.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+  </ItemGroup>
+
+</Project>
