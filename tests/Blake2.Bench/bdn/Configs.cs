@@ -29,10 +29,10 @@ public class MultipleJitConfig : ManualConfig
 #if NETFRAMEWORK // Legacy JIT can only be used from a CLR host
 		Add(Job.LegacyJitX64.With(Runtime.Clr).WithId("net46"));
 		Add(Job.LegacyJitX86.With(Runtime.Clr).WithId("net46"));
-		//Add(Job.RyuJitX64.With(Runtime.Clr).WithId("net46"));
-#else
 		Add(Job.RyuJitX64.With(Runtime.Clr).WithId("net46"));
-		Add(Job.RyuJitX86.With(Runtime.Clr).WithId("net46")); //.NET Framework doesn't yet include RyuJIT-32, so this runs LegacyJIT
+#else
+//		Add(Job.RyuJitX64.With(Runtime.Clr).WithId("net46"));
+//		Add(Job.RyuJitX86.With(Runtime.Clr).WithId("net46")); //.NET Framework doesn't yet include RyuJIT-32, so this runs LegacyJIT
 #endif
 
 		Add(DefaultConfig.Instance.GetLoggers().ToArray());

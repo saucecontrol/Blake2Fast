@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-#if FAST_ENDIAN
-using System.Buffers.Binary;
-#endif
 #if FAST_SPAN
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 #endif
 #if USE_INTRINSICS
@@ -48,7 +46,7 @@ namespace SauceControl.Blake2Fast
 		{
 			uint* m = (uint*)data;
 
-#if FAST_ENDIAN
+#if FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 			{
 				var span = new ReadOnlySpan<byte>(data, BlockBytes);
@@ -72,7 +70,7 @@ namespace SauceControl.Blake2Fast
 		public void Init(int outlen = HashBytes, byte[] key = null)
 #endif
 		{
-#if !FAST_ENDIAN
+#if !FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 				throw new PlatformNotSupportedException("Big-endian platforms not supported");
 #endif
@@ -173,7 +171,7 @@ namespace SauceControl.Blake2Fast
 			fixed (Blake2sContext* s = &this)
 				compress(s, s->b);
 
-#if FAST_ENDIAN
+#if FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 			{
 				var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref this.h[0]), HashBytes);

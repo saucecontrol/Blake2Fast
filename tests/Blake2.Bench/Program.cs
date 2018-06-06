@@ -13,8 +13,8 @@ static class Paths
 {
 	public const string DotNetCLIx64 = @"c:\program files\dotnet\dotnet.exe";
 	public const string DotNetCLIx86 = @"c:\program files (x86)\dotnet\dotnet.exe";
-	public const string BlakeNativeDLLx64 = @"c:\gitlocal\blake2\tests\blake2.bench\nativebin\x64";
-	public const string BlakeNativeDLLx86 = @"c:\gitlocal\blake2\tests\blake2.bench\nativebin\x86";
+	public const string BlakeNativeDLLx64 = @"c:\gitlocal\blake2fast\tests\blake2.bench\nativebin\x64";
+	public const string BlakeNativeDLLx86 = @"c:\gitlocal\blake2fast\tests\blake2.bench\nativebin\x86";
 }
 
 static class BenchConfig

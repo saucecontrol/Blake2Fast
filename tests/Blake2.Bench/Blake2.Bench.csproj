@@ -11,14 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0-rc1" />
     <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
     <PackageReference Include="libsodium" Version="1.0.16" />
     <PackageReference Include="NSec.Cryptography" Version="18.5.0-preview3" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp2.1'">
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.4.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp1.1'">
@@ -34,6 +29,7 @@
     <PackageReference Include="Isopoh.Cryptography.Blake2b" Version="1.0.8" />
     <PackageReference Include="Konscious.Security.Cryptography.Blake2" Version="1.0.5" />
     <PackageReference Include="System.Data.HashFunction.Blake2" Version="2.0.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>

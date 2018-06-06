@@ -25,19 +25,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <DefineConstants>$(DefineConstants);FAST_ENDIAN;FAST_SPAN;USE_INTRINSICS</DefineConstants>
+    <DefineConstants>$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">
     <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0-rc1" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp2.1'">
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.4.0" />
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>
