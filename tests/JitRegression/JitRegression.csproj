@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<TargetFrameworks>netcoreapp2.1;netcoreapp2.0;netcoreapp1.1;net46</TargetFrameworks>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DebugType>pdbonly</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BenchmarkDotNet" Version="0.10.14" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
+	</ItemGroup>
+
+</Project>
