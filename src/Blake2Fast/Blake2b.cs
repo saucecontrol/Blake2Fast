@@ -31,6 +31,10 @@ namespace SauceControl.Blake2Fast
 		private fixed ulong h[HashWords];
 		private fixed ulong t[2];
 		private fixed ulong f[2];
+#if USE_INTRINSICS
+		private fixed ulong viv[HashWords];
+		private fixed byte vrm[32];
+#endif
 		private uint c;
 		private uint outlen;
 
@@ -88,6 +92,11 @@ namespace SauceControl.Blake2Fast
 			Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref this.h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
 			this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ (uint)outlen;
 			this.outlen = (uint)outlen;
+
+#if USE_INTRINSICS
+			Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref this.viv[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
+			Unsafe.CopyBlock(ref this.vrm[0], ref rormask[0], 32);
+#endif
 
 			if (keylen > 0)
 			{

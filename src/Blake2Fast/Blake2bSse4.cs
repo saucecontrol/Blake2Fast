@@ -20,7 +20,7 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_32(Vector128<ulong> x) => Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b10110001)); //2,3,0,1
+		private static Vector128<ulong> ror64_32(Vector128<ulong> x) => Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> ror64_63(Vector128<ulong> x) => Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
@@ -128,18 +128,13 @@ namespace SauceControl.Blake2Fast
 			var row2l = Sse2.LoadVector128(s->h + 4);
 			var row2h = Sse2.LoadVector128(s->h + 6);
 
-			ref ulong riv = ref iv[0];
-			var row3l = Sse2.LoadVector128((ulong*)Unsafe.AsPointer(ref riv));
-			var row3h = Sse2.LoadVector128((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref riv, 2)));
-			var row4l = Sse2.LoadVector128((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref riv, 4)));
-			var row4h = Sse2.LoadVector128((ulong*)Unsafe.AsPointer(ref Unsafe.Add(ref riv, 6)));
+			var row3l = Sse2.LoadVector128(s->viv);
+			var row3h = Sse2.LoadVector128(s->viv + 2);
+			var row4l = Sse2.LoadVector128(s->viv + 4);
+			var row4h = Sse2.LoadVector128(s->viv + 6);
 
 			row4l = Sse2.Xor(row4l, Sse2.LoadVector128(s->t));
 			row4h = Sse2.Xor(row4h, Sse2.LoadVector128(s->f));
-
-			ref byte rrv = ref rormask[0];
-			var r16 = Sse2.LoadVector128((sbyte*)Unsafe.AsPointer(ref rrv));
-			var r24 = Sse2.LoadVector128((sbyte*)Unsafe.AsPointer(ref Unsafe.Add(ref rrv, 16)));
 
 			//ROUND 1
 			var m0 = Sse2.LoadVector128(m);
@@ -149,6 +144,9 @@ namespace SauceControl.Blake2Fast
 
 			var b0 = Sse2.UnpackLow(m0, m1);
 			var b1 = Sse2.UnpackLow(m2, m3);
+
+			var r16 = Sse2.LoadVector128((sbyte*)s->vrm);
+			var r24 = Sse2.LoadVector128((sbyte*)s->vrm + 16);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
@@ -186,7 +184,7 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = shuffle_ulong(m0, 0b01001110); //1,0,3,2
+			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
@@ -204,12 +202,12 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
 			b0 = Sse2.UnpackLow(m4, m0);
-			b1 = blend_ulong(m1, m6, 0b11110000);
+			b1 = blend_ulong(m1, m6, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m5, m1, 0b11110000);
+			b0 = blend_ulong(m5, m1, 0b_1111_0000);
 			b1 = Sse2.UnpackHigh(m3, m4);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
@@ -232,8 +230,8 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m1, m2, 0b11110000);
-			b1 = blend_ulong(m2, m7, 0b11110000);
+			b0 = blend_ulong(m1, m2, 0b_1111_0000);
+			b1 = blend_ulong(m2, m7, 0b_1111_0000);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
@@ -249,19 +247,19 @@ namespace SauceControl.Blake2Fast
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
-			b0 = blend_ulong(m0, m3, 0b11110000);
-			b1 = blend_ulong(m2, m7, 0b11110000);
+			b0 = blend_ulong(m0, m3, 0b_1111_0000);
+			b1 = blend_ulong(m2, m7, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m7, m5, 0b11110000);
-			b1 = blend_ulong(m3, m1, 0b11110000);
+			b0 = blend_ulong(m7, m5, 0b_1111_0000);
+			b1 = blend_ulong(m3, m1, 0b_1111_0000);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
 			b0 = alignr_ulong(m6, m0, 8);
-			b1 = blend_ulong(m4, m6, 0b11110000);
+			b1 = blend_ulong(m4, m6, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
@@ -278,19 +276,19 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m2, m3, 0b11110000);
+			b0 = blend_ulong(m2, m3, 0b_1111_0000);
 			b1 = Sse2.UnpackHigh(m7, m0);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
 			b0 = Sse2.UnpackHigh(m6, m2);
-			b1 = blend_ulong(m7, m4, 0b11110000);
+			b1 = blend_ulong(m7, m4, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 7
-			b0 = blend_ulong(m6, m0, 0b11110000);
+			b0 = blend_ulong(m6, m0, 0b_1111_0000);
 			b1 = Sse2.UnpackLow(m7, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
@@ -302,19 +300,19 @@ namespace SauceControl.Blake2Fast
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackLow(m0, m3);
-			b1 = shuffle_ulong(m4, 0b01001110); //1,0,3,2
+			b1 = shuffle_ulong(m4, 0b_01_00_11_10);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
 			b0 = Sse2.UnpackHigh(m3, m1);
-			b1 = blend_ulong(m1, m5, 0b11110000);
+			b1 = blend_ulong(m1, m5, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 8
 			b0 = Sse2.UnpackHigh(m6, m3);
-			b1 = blend_ulong(m6, m1, 0b11110000);
+			b1 = blend_ulong(m6, m1, 0b_1111_0000);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
@@ -352,7 +350,7 @@ namespace SauceControl.Blake2Fast
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
-			b0 = blend_ulong(m1, m3, 0b11110000);
+			b0 = blend_ulong(m1, m3, 0b_1111_0000);
 			b1 = m2;
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
@@ -365,7 +363,7 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
 
 			b0 = Sse2.UnpackLow(m1, m2);
-			b1 = blend_ulong(m3, m2, 0b11110000);
+			b1 = blend_ulong(m3, m2, 0b_1111_0000);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
@@ -416,7 +414,7 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = shuffle_ulong(m0, 0b01001110); //1,0,3,2
+			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);

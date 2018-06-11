@@ -76,17 +76,17 @@ namespace SauceControl.Blake2Fast
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void diagonalize(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4)
 		{
-			row4 = Sse2.Shuffle(row4, 0b10010011); //2,1,0,3
-			row3 = Sse2.Shuffle(row3, 0b01001110); //1,0,3,2
-			row2 = Sse2.Shuffle(row2, 0b00111001); //0,3,2,1
+			row4 = Sse2.Shuffle(row4, 0b_10_01_00_11);
+			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
+			row2 = Sse2.Shuffle(row2, 0b_00_11_10_01);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void undiagonalize(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4)
 		{
-			row4 = Sse2.Shuffle(row4, 0b00111001); //0,3,2,1
-			row3 = Sse2.Shuffle(row3, 0b01001110); //1,0,3,2
-			row2 = Sse2.Shuffle(row2, 0b10010011); //2,1,0,3
+			row4 = Sse2.Shuffle(row4, 0b_00_11_10_01);
+			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
+			row2 = Sse2.Shuffle(row2, 0b_10_01_00_11);
 		}
 
 		unsafe private static void mixSse41(Blake2sContext* s, uint* m)
@@ -94,15 +94,13 @@ namespace SauceControl.Blake2Fast
 			var row1 = Sse2.LoadVector128(s->h);
 			var row2 = Sse2.LoadVector128(s->h + 4);
 
-			ref uint riv = ref iv[0];
-			var row3 = Sse2.LoadVector128((uint*)Unsafe.AsPointer(ref riv));
-			var row4 = Sse2.LoadVector128((uint*)Unsafe.AsPointer(ref Unsafe.Add(ref riv, 4)));
+			var row3 = Sse2.LoadVector128(s->viv);
+			var row4 = Sse2.LoadVector128(s->viv + 4);
 
 			row4 = Sse2.Xor(row4, Sse2.LoadVector128(s->t)); // reads into f[] as well
 
-			ref byte rrv = ref rormask[0];
-			var r8 = Sse2.LoadVector128((sbyte*)Unsafe.AsPointer(ref rrv));
-			var r16 = Sse2.LoadVector128((sbyte*)Unsafe.AsPointer(ref Unsafe.Add(ref rrv, 16)));
+			var r8 = Sse2.LoadVector128((sbyte*)s->vrm);
+			var r16 = Sse2.LoadVector128((sbyte*)s->vrm + 16);
 
 			var m0 = Sse2.LoadVector128(m);
 			var m1 = Sse2.LoadVector128(m + 4);
@@ -110,82 +108,82 @@ namespace SauceControl.Blake2Fast
 			var m3 = Sse2.LoadVector128(m + 12);
 
 			//ROUND 1
-			var b0 = shuffle2_uint(m0, m1, 0b10001000); //2,0,2,0;
+			var b0 = shuffle2_uint(m0, m1, 0b_10_00_10_00);;
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			b0 = shuffle2_uint(m0, m1, 0b11011101); //3,1,3,1
+			b0 = shuffle2_uint(m0, m1, 0b_11_01_11_01);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
-			b0 = shuffle2_uint(m2, m3, 0b10001000); //2,0,2,0;
+			b0 = shuffle2_uint(m2, m3, 0b_10_00_10_00);;
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			b0 = shuffle2_uint(m2, m3, 0b11011101); //3,1,3,1
+			b0 = shuffle2_uint(m2, m3, 0b_11_01_11_01);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			//ROUND 2
-			var t0 = blend_uint(m1, m2, 0b00001100);
+			var t0 = blend_uint(m1, m2, 0b_00_00_11_00);
 			var t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-			var t2 = blend_uint(t0, t1, 0b11110000);
-			b0 = Sse2.Shuffle(t2, 0b10010011); //2,1,0,3
+			var t2 = blend_uint(t0, t1, 0b_11_11_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = Sse2.Shuffle(m2, 0b00001000); //0,0,2,0
-			t1 = blend_uint(m1, m3, 0b11000000);
-			t2 = blend_uint(t0, t1, 0b11110000);
-			b0 = Sse2.Shuffle(t2, 0b10110001); //2,3,0,1
+			t0 = Sse2.Shuffle(m2, 0b_00_00_10_00);
+			t1 = blend_uint(m1, m3, 0b_11_00_00_00);
+			t2 = blend_uint(t0, t1, 0b_11_11_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 4);
-			t1 = blend_uint(m2, t0, 0b00110000);
-			t2 = blend_uint(m0, t1, 0b11110000);
-			b0 = Sse2.Shuffle(t2, 0b10110001); //2,3,0,1
+			t1 = blend_uint(m2, t0, 0b_00_11_00_00);
+			t2 = blend_uint(m0, t1, 0b_11_11_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-			t2 = blend_uint(t0, t1, 0b00001100);
-			b0 = Sse2.Shuffle(t2, 0b10110001); //2,3,0,1
+			t2 = blend_uint(t0, t1, 0b_00_00_11_00);
+			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			//ROUND 3
 			t0 = Sse2.UnpackHigh(m2, m3);
-			t1 = blend_uint(m3, m1, 0b00001100);
-			t2 = blend_uint(t0, t1, 0b00001111);
-			b0 = Sse2.Shuffle(t2, 0b11010010); //3,1,0,2
+			t1 = blend_uint(m3, m1, 0b_00_00_11_00);
+			t2 = blend_uint(t0, t1, 0b_00_00_11_11);
+			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.UnpackLow(m2, m0);
-			t1 = blend_uint(t0, m0, 0b11110000);
+			t1 = blend_uint(t0, m0, 0b_11_11_00_00);
 			t2 = Sse2.ShiftLeftLogical128BitLane(m3, 8);
-			b0 = blend_uint(t1, t2, 0b11000000);
+			b0 = blend_uint(t1, t2, 0b_11_00_00_00);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
-			t0 = blend_uint(m0, m2, 0b00111100);
+			t0 = blend_uint(m0, m2, 0b_00_11_11_00);
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 12);
-			t2 = blend_uint(t0, t1, 0b00000011);
-			b0 = Sse2.Shuffle(t2, 0b01001110); //1,0,3,2
+			t2 = blend_uint(t0, t1, 0b_00_00_00_11);
+			b0 = Sse2.Shuffle(t2, 0b_01_00_11_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-			t1 = blend_uint(m0, m1, 0b00110011);
-			t2 = blend_uint(t1, t0, 0b11000000);
-			b0 = Sse2.Shuffle(t2, 0b00011011); //0,1,2,3
+			t1 = blend_uint(m0, m1, 0b_00_11_00_11);
+			t2 = blend_uint(t1, t0, 0b_11_00_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_00_01_10_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
@@ -193,22 +191,22 @@ namespace SauceControl.Blake2Fast
 			//ROUND 4
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.UnpackHigh(t0, m2);
-			t2 = blend_uint(t1, m3, 0b00001100);
-			b0 = Sse2.Shuffle(t2, 0b11010010); //3,1,0,2
+			t2 = blend_uint(t1, m3, 0b_00_00_11_00);
+			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m2, 8);
-			t1 = blend_uint(m3, m0, 0b00001100);
-			t2 = blend_uint(t1, t0, 0b11000000);
-			b0 = Sse2.Shuffle(t2, 0b10000111); //2,0,1,3
+			t1 = blend_uint(m3, m0, 0b_00_00_11_00);
+			t2 = blend_uint(t1, t0, 0b_11_00_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
-			t0 = blend_uint(m0, m1, 0b00001111);
-			t1 = blend_uint(t0, m3, 0b11000000);
-			b0 = Sse2.Shuffle(t1, 0b11000110); //3,0,1,2
+			t0 = blend_uint(m0, m1, 0b_00_00_11_11);
+			t1 = blend_uint(t0, m3, 0b_11_00_00_00);
+			b0 = Sse2.Shuffle(t1, 0b_11_00_01_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
@@ -222,28 +220,28 @@ namespace SauceControl.Blake2Fast
 			//ROUND 5
 			t0 = unpacklow64_uint(m1, m2);
 			t1 = unpackhigh64_uint(m0, m2);
-			t2 = blend_uint(t0, t1, 0b00110011);
-			b0 = Sse2.Shuffle(t2, 0b10000111); //2,0,1,3
+			t2 = blend_uint(t0, t1, 0b_00_11_00_11);
+			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = unpackhigh64_uint(m1, m3);
 			t1 = unpacklow64_uint(m0, m1);
-			b0 = blend_uint(t0, t1, 0b00110011);
+			b0 = blend_uint(t0, t1, 0b_00_11_00_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			t0 = unpackhigh64_uint(m3, m1);
 			t1 = unpackhigh64_uint(m2, m0);
-			b0 = blend_uint(t1, t0, 0b00110011);
+			b0 = blend_uint(t1, t0, 0b_00_11_00_11);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = blend_uint(m0, m2, 0b00000011);
+			t0 = blend_uint(m0, m2, 0b_00_00_00_11);
 			t1 = Sse2.ShiftLeftLogical128BitLane(t0, 8);
-			t2 = blend_uint(t1, m3, 0b00001111);
-			b0 = Sse2.Shuffle(t2, 0b01100011); //1,2,0,3
+			t2 = blend_uint(t1, m3, 0b_00_00_11_11);
+			b0 = Sse2.Shuffle(t2, 0b_01_10_00_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
@@ -256,73 +254,73 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.ShiftRightLogical128BitLane(m2, 4);
-			t1 = blend_uint(m0, m3, 0b00000011);
-			b0 = blend_uint(t1, t0, 0b00111100);
+			t1 = blend_uint(m0, m3, 0b_00_00_00_11);
+			b0 = blend_uint(t1, t0, 0b_00_11_11_00);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
-			t0 = blend_uint(m1, m0, 0b00001100);
+			t0 = blend_uint(m1, m0, 0b_00_00_11_00);
 			t1 = Sse2.ShiftRightLogical128BitLane(m3, 4);
-			t2 = blend_uint(t0, t1, 0b00110000);
-			b0 = Sse2.Shuffle(t2, 0b01101100); //1,2,3,0
+			t2 = blend_uint(t0, t1, 0b_00_11_00_00);
+			b0 = Sse2.Shuffle(t2, 0b_01_10_11_00);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = unpacklow64_uint(m1, m2);
-			t1= Sse2.Shuffle(m3, 0b00100001); //0,2,0,1
-			b0 = blend_uint(t0, t1, 0b00110011);
+			t1= Sse2.Shuffle(m3, 0b_00_10_00_01);
+			b0 = blend_uint(t0, t1, 0b_00_11_00_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			//ROUND 7
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 12);
-			t1 = blend_uint(m0, m3, 0b00110011);
-			b0 = blend_uint(t1, t0, 0b11000000);
+			t1 = blend_uint(m0, m3, 0b_00_11_00_11);
+			b0 = blend_uint(t1, t0, 0b_11_00_00_00);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = blend_uint(m3, m2, 0b00110000);
+			t0 = blend_uint(m3, m2, 0b_00_11_00_00);
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-			t2 = blend_uint(t0, t1, 0b00000011);
-			b0 = Sse2.Shuffle(t2, 0b10011100); //2,1,3,0
+			t2 = blend_uint(t0, t1, 0b_00_00_00_11);
+			b0 = Sse2.Shuffle(t2, 0b_10_01_11_00);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			t0 = unpacklow64_uint(m0, m2);
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-			b0 = Sse2.Shuffle(blend_uint(t0, t1, 0b00001100), 0b10110100); //2,3,1,0
+			b0 = Sse2.Shuffle(blend_uint(t0, t1, 0b_00_00_11_00), 0b_10_11_01_00);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.UnpackHigh(m1, m2);
 			t1 = unpackhigh64_uint(m0, t0);
-			b0 = Sse2.Shuffle(t1, 0b11000110); //3,0,1,2
+			b0 = Sse2.Shuffle(t1, 0b_11_00_01_10);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			//ROUND 8
 			t0 = Sse2.UnpackHigh(m0, m1);
-			t1 = blend_uint(t0, m3, 0b00001111);
-			b0 = Sse2.Shuffle(t1, 0b10001101); //2,0,3,1
+			t1 = blend_uint(t0, m3, 0b_00_00_11_11);
+			b0 = Sse2.Shuffle(t1, 0b_10_00_11_01);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = blend_uint(m2, m3, 0b00110000);
+			t0 = blend_uint(m2, m3, 0b_00_11_00_00);
 			t1 = Sse2.ShiftRightLogical128BitLane(m0, 4);
-			t2 = blend_uint(t0, t1, 0b00000011);
-			b0 = Sse2.Shuffle(t2, 0b01001011); //1,0,2,3
+			t2 = blend_uint(t0, t1, 0b_00_00_00_11);
+			b0 = Sse2.Shuffle(t2, 0b_01_00_10_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			t0 = unpackhigh64_uint(m0, m3);
 			t1 = unpacklow64_uint(m1, m2);
-			t2 = blend_uint(t0, t1, 0b00111100);
-			b0 = Sse2.Shuffle(t2, 0b00101101); //0,2,3,1
+			t2 = blend_uint(t0, t1, 0b_00_11_11_00);
+			b0 = Sse2.Shuffle(t2, 0b_00_10_11_01);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
@@ -336,41 +334,41 @@ namespace SauceControl.Blake2Fast
 			//ROUND 9
 			t0 = Sse2.UnpackHigh(m1, m3);
 			t1 = unpacklow64_uint(t0, m0);
-			t2 = blend_uint(t1, m2, 0b11000000);
-			b0 = shufflehigh_uint(t2, 0b01001110); //1,0,3,2
+			t2 = blend_uint(t1, m2, 0b_11_00_00_00);
+			b0 = shufflehigh_uint(t2, 0b_01_00_11_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.UnpackHigh(m0, m3);
-			t1 = blend_uint(m2, t0, 0b11110000);
-			b0 = Sse2.Shuffle(t1, 0b00100111); //0,2,1,3
+			t1 = blend_uint(m2, t0, 0b_11_11_00_00);
+			b0 = Sse2.Shuffle(t1, 0b_00_10_01_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
-			t0 = blend_uint(m2, m0, 0b00001100);
+			t0 = blend_uint(m2, m0, 0b_00_00_11_00);
 			t1 = Sse2.ShiftLeftLogical128BitLane(t0, 4);
-			b0 = blend_uint(t1, m3, 0b00001111);
+			b0 = blend_uint(t1, m3, 0b_00_00_11_11);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = blend_uint(m1, m0, 0b00110000);
-			b0 = Sse2.Shuffle(t0, 0b01001110); //1,0,3,2
+			t0 = blend_uint(m1, m0, 0b_00_11_00_00);
+			b0 = Sse2.Shuffle(t0, 0b_01_00_11_10);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 			//ROUND 10
-			t0 = blend_uint(m0, m2, 0b00000011);
-			t1 = blend_uint(m1, m2, 0b00110000);
-			t2 = blend_uint(t1, t0, 0b00001111);
-			b0 = Sse2.Shuffle(t2, 0b01110010); //1,3,0,2
+			t0 = blend_uint(m0, m2, 0b_00_00_00_11);
+			t1 = blend_uint(m1, m2, 0b_00_11_00_00);
+			t2 = blend_uint(t1, t0, 0b_00_00_11_11);
+			b0 = Sse2.Shuffle(t2, 0b_01_11_00_10);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m0, 4);
-			t1 = blend_uint(m1, t0, 0b11000000);
-			b0 = Sse2.Shuffle(t1, 0b01100011); //1,2,0,3
+			t1 = blend_uint(m1, t0, 0b_11_00_00_00);
+			b0 = Sse2.Shuffle(t1, 0b_01_10_00_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
@@ -378,14 +376,14 @@ namespace SauceControl.Blake2Fast
 			t0 = Sse2.UnpackHigh(m0, m3);
 			t1 = Sse2.UnpackLow(m2, m3);
 			t2 = unpackhigh64_uint(t0, t1);
-			b0 = Sse2.Shuffle(t2, 0b11001001); //3,0,2,1
+			b0 = Sse2.Shuffle(t2, 0b_11_00_10_01);
 
 			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
 
-			t0 = blend_uint(m3, m2, 0b11000000);
+			t0 = blend_uint(m3, m2, 0b_11_00_00_00);
 			t1 = Sse2.UnpackLow(m0, m3);
-			t2 = blend_uint(t0, t1, 0b00001111);
-			b0 = Sse2.Shuffle(t2, 0b00011011); //0,1,2,3
+			t2 = blend_uint(t0, t1, 0b_00_00_11_11);
+			b0 = Sse2.Shuffle(t2, 0b_00_01_10_11);
 
 			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
