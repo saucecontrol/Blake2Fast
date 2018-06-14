@@ -71,6 +71,80 @@ public class RfcSelfTest
 		return inc.Finish().SequenceEqual(blake2sCheck);
 	}
 
+	private static bool blake2bHmacSelfTest()
+	{
+#if ICRYPTOTRANSFORM
+		var inc = Blake2b.CreateHashAlgorithm(blake2bCheck.Length);
+#else
+		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
+#endif
+
+		foreach (int diglen in new[] { 20, 32, 48, 64 })
+		{
+			var halg = Blake2b.CreateHashAlgorithm(diglen);
+			var hmac = Blake2b.CreateHMAC(diglen, getTestSequence(diglen));
+
+			foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
+			{
+				var msg = getTestSequence(msglen);
+
+#if ICRYPTOTRANSFORM
+				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+#else
+				inc.Update(halg.ComputeHash(msg));
+				inc.Update(hmac.ComputeHash(msg));
+#endif
+			}
+		}
+
+#if ICRYPTOTRANSFORM
+		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		var hash = inc.Hash;
+#else
+		var hash = inc.Finish();
+#endif
+
+		return hash.SequenceEqual(blake2bCheck);
+	}
+
+	private static bool blake2sHmacSelfTest()
+	{
+#if ICRYPTOTRANSFORM
+		var inc = Blake2s.CreateHashAlgorithm(blake2bCheck.Length);
+#else
+		var inc = Blake2s.CreateIncrementalHasher(blake2bCheck.Length);
+#endif
+
+		foreach (int diglen in new[] { 16, 20, 28, 32 })
+		{
+			var halg = Blake2s.CreateHashAlgorithm(diglen);
+			var hmac = Blake2s.CreateHMAC(diglen, getTestSequence(diglen));
+
+			foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
+			{
+				var msg = getTestSequence(msglen);
+
+#if ICRYPTOTRANSFORM
+				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+#else
+				inc.Update(halg.ComputeHash(msg));
+				inc.Update(hmac.ComputeHash(msg));
+#endif
+			}
+		}
+
+#if ICRYPTOTRANSFORM
+		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		var hash = inc.Hash;
+#else
+		var hash = inc.Finish();
+#endif
+
+		return hash.SequenceEqual(blake2sCheck);
+	}
+
 	[Fact]
 	public void TestBlake2b()
 	{
@@ -81,5 +155,17 @@ public class RfcSelfTest
 	public void TestBlake2s()
 	{
 		Assert.True(blake2sSelfTest());
+	}
+
+	[Fact]
+	public void TestBlake2bHMAC()
+	{
+		Assert.True(blake2bHmacSelfTest());
+	}
+
+	[Fact]
+	public void TestBlake2sHMAC()
+	{
+		Assert.True(blake2sHmacSelfTest());
 	}
 }

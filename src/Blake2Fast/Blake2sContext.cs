@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
+#if USE_INTRINSICS
+using System.Runtime.Intrinsics.X86;
+#endif
+
 #if FAST_SPAN
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-#endif
-#if USE_INTRINSICS
-using System.Runtime.Intrinsics.X86;
+using ByteSpan = System.ReadOnlySpan<byte>;
+using WriteableByteSpan = System.Span<byte>;
+#else
+using ByteSpan = System.ArraySegment<byte>;
+using WriteableByteSpan = System.ArraySegment<byte>;
 #endif
 
 namespace SauceControl.Blake2Fast
@@ -46,14 +52,14 @@ namespace SauceControl.Blake2Fast
 				this.t[1]++;
 		}
 
-		unsafe private static void compress(Blake2sContext* s, byte* data)
+		unsafe private static void compress(Blake2sContext* s, byte* input)
 		{
-			uint* m = (uint*)data;
+			uint* m = (uint*)input;
 
 #if FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 			{
-				var span = new ReadOnlySpan<byte>(data, BlockBytes);
+				var span = new ReadOnlySpan<byte>(input, BlockBytes);
 				m = (uint*)s->b;
 				for (int i = 0; i < BlockWords; i++)
 					m[i] = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(i * WordSize, WordSize));
@@ -61,37 +67,34 @@ namespace SauceControl.Blake2Fast
 #endif
 
 #if USE_INTRINSICS
-			if (Sse.IsSupported && Sse2.IsSupported && Ssse3.IsSupported && Sse41.IsSupported)
-			mixSse41(s, m);
+			if (Sse41.IsSupported)
+				mixSse41(s, m);
 			else
 #endif
-			mixScalar(s, m);
+				mixScalar(s, m);
 		}
 
-#if FAST_SPAN
-		public void Init(int outlen = HashBytes, ReadOnlySpan<byte> key = default)
-#else
-		public void Init(int outlen = HashBytes, byte[] key = null)
-#endif
+		public void Init(int digestLength = HashBytes, ByteSpan key = default)
 		{
 #if !FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 				throw new PlatformNotSupportedException("Big-endian platforms not supported");
 #endif
 
-			if (outlen == 0 || (uint)outlen > HashBytes)
-				throw new ArgumentOutOfRangeException($"Value must be between 1 and {HashBytes}", nameof(outlen));
+			if (digestLength == 0 || (uint)digestLength > HashBytes)
+				throw new ArgumentOutOfRangeException(nameof(digestLength), $"Value must be between 1 and {HashBytes}");
 
-#if !FAST_SPAN
-			key = key ?? Array.Empty<byte>();
-#endif
+#if FAST_SPAN
 			uint keylen = (uint)key.Length;
+#else
+			uint keylen = (uint)key.Count;
+#endif
 			if (keylen > MaxKeyBytes)
 				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
+			outlen = (uint)digestLength;
 			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref this.h[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
-			this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ (uint)outlen;
-			this.outlen = (uint)outlen;
+			this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
 #if USE_INTRINSICS
 			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref this.viv[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
@@ -103,22 +106,19 @@ namespace SauceControl.Blake2Fast
 #if FAST_SPAN
 				Unsafe.CopyBlock(ref this.b[0], ref MemoryMarshal.GetReference(key), keylen);
 #else
-				Unsafe.CopyBlock(ref this.b[0], ref key[0], keylen);
+				Unsafe.CopyBlock(ref this.b[0], ref key.Array[key.Offset], keylen);
 #endif
 				c = BlockBytes;
 			}
 		}
 
-#if FAST_SPAN
-		public void Update(ReadOnlySpan<byte> data)
-#else
-		public void Update(byte[] data)
-#endif
+		public void Update(ByteSpan input)
 		{
-#if !FAST_SPAN
-			data = data ?? Array.Empty<byte>();
+#if FAST_SPAN
+			uint inlen = (uint)input.Length;
+#else
+			uint inlen = (uint)input.Count;
 #endif
-			uint inlen = (uint)data.Length;
 			uint clen = 0u;
 			uint blockrem = BlockBytes - c;
 
@@ -127,9 +127,9 @@ namespace SauceControl.Blake2Fast
 				if (blockrem > 0)
 				{
 #if FAST_SPAN
-					Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(data), blockrem);
+					Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(input), blockrem);
 #else
-					Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[0], blockrem);
+					Unsafe.CopyBlockUnaligned(ref this.b[c], ref input.Array[input.Offset], blockrem);
 #endif
 				}
 				addLength(BlockBytes);
@@ -143,12 +143,16 @@ namespace SauceControl.Blake2Fast
 
 			if (inlen + clen > BlockBytes)
 			{
-				fixed (byte* pdata = &data[0])
+#if FAST_SPAN
+				fixed (byte* pinput = &input[0])
+#else
+				fixed (byte* pinput = &input.Array[input.Offset])
+#endif
 				fixed (Blake2sContext* s = &this)
 				while (inlen > BlockBytes)
 				{
 					addLength(BlockBytes);
-					compress(s, pdata + clen);
+					compress(s, pinput + clen);
 
 					clen += BlockBytes;
 					inlen -= BlockBytes;
@@ -159,18 +163,22 @@ namespace SauceControl.Blake2Fast
 			if (inlen > 0)
 			{
 #if FAST_SPAN
-				Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(data.Slice((int)clen)), inlen);
+				Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(input.Slice((int)clen)), inlen);
 #else
-				Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[clen], inlen);
+				Unsafe.CopyBlockUnaligned(ref this.b[c], ref input.Array[input.Offset + clen], inlen);
 #endif
 				c += inlen;
 			}
 		}
 
-		public byte[] Finish()
+#if !IMPLICIT_BYTESPAN
+		public void Update(byte[] input) => Update(input.AsByteSpan());
+#endif
+
+		private void finish(WriteableByteSpan hash)
 		{
 			if (this.f[0] != 0)
-				throw new InvalidOperationException(nameof(Finish) + " has already been used.  It cannot be called again on this instance.");
+				throw new InvalidOperationException("Hash has already been finalized.");
 
 			if (c < BlockBytes)
 				Unsafe.InitBlockUnaligned(ref this.b[c], 0, BlockBytes - c);
@@ -189,61 +197,34 @@ namespace SauceControl.Blake2Fast
 			}
 #endif
 
-			var hash = new byte[outlen];
+#if FAST_SPAN
 			Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<uint, byte>(ref this.h[0]), outlen);
+#else
+			Unsafe.CopyBlock(ref hash.Array[hash.Offset], ref Unsafe.As<uint, byte>(ref this.h[0]), outlen);
+#endif
+		}
 
-			this = default;
+		public byte[] Finish()
+		{
+			byte[] hash = new byte[outlen];
+			finish(new WriteableByteSpan(hash));
+
 			return hash;
 		}
-	}
-
-	public static class Blake2s
-	{
-#if FAST_SPAN
-		unsafe public static byte[] ComputeHash(ReadOnlySpan<byte> data) => ComputeHash(Blake2sContext.HashBytes, ReadOnlySpan<byte>.Empty, data);
-
-		unsafe public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> data) => ComputeHash(Blake2sContext.HashBytes, key, data);
-
-		unsafe public static byte[] ComputeHash(int outlen, ReadOnlySpan<byte> data) => ComputeHash(outlen, ReadOnlySpan<byte>.Empty, data);
-
-		unsafe public static byte[] ComputeHash(int outlen, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data)
-#else
-		unsafe public static byte[] ComputeHash(byte[] data) => ComputeHash(Blake2sContext.HashBytes, Array.Empty<byte>(), data);
-
-		unsafe public static byte[] ComputeHash(byte[] key, byte[] data) => ComputeHash(Blake2sContext.HashBytes, key, data);
-
-		unsafe public static byte[] ComputeHash(int outlen, byte[] data) => ComputeHash(outlen, Array.Empty<byte>(), data);
-
-		unsafe public static byte[] ComputeHash(int outlen, byte[] key, byte[] data)
-#endif
-		{
-			var ctx = default(Blake2sContext);
-			ctx.Init(outlen, key);
-			ctx.Update(data);
-			return ctx.Finish();
-		}
 
 #if FAST_SPAN
-		unsafe public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(Blake2sContext.HashBytes, ReadOnlySpan<byte>.Empty);
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(Blake2sContext.HashBytes, key);
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen) => CreateIncrementalHasher(outlen, ReadOnlySpan<byte>.Empty);
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen, ReadOnlySpan<byte> key)
-#else
-		unsafe public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(Blake2sContext.HashBytes, Array.Empty<byte>());
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(byte[] key) => CreateIncrementalHasher(Blake2sContext.HashBytes, key);
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen) => CreateIncrementalHasher(outlen, Array.Empty<byte>());
-
-		unsafe public static IBlake2Incremental CreateIncrementalHasher(int outlen, byte[] key)
-#endif
+		public bool TryFinish(WriteableByteSpan output, out int bytesWritten)
 		{
-			var ctx = default(Blake2sContext);
-			ctx.Init(outlen, key);
-			return ctx;
+			if (output.Length < outlen)
+			{
+				bytesWritten = 0;
+				return false;
+			}
+
+			finish(output);
+			bytesWritten = (int)outlen;
+			return true;
 		}
+#endif
 	}
 }

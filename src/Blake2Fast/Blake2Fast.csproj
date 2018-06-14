@@ -4,7 +4,7 @@
     <RootNamespace>SauceControl.Blake2Fast</RootNamespace>
     <AssemblyName>SauceControl.Blake2Fast</AssemblyName>
     <AssemblyTitle>Blake2Fast</AssemblyTitle>
-    <TargetFrameworks>netstandard1.3;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard1.0;netstandard1.3;netstandard2.0;netcoreapp2.0;netcoreapp2.1;net45</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -24,8 +24,16 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp2.1'">
+    <DefineConstants>$(DefineConstants);IMPLICIT_BYTESPAN</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
     <DefineConstants>$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\SauceControl.Blake2Fast.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">
@@ -46,6 +54,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
+    <Compile Update="Blake2bContext.cs">
+      <DependentUpon>Blake2bContext.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
     <Compile Update="Blake2bScalar.cs">
       <DependentUpon>Blake2bScalar.tt</DependentUpon>
       <DesignTime>True</DesignTime>
@@ -58,6 +71,11 @@
     </Compile>
     <Compile Update="Blake2s.cs">
       <DependentUpon>Blake2s.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Blake2sContext.cs">
+      <DependentUpon>Blake2sContext.tt</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
@@ -78,6 +96,10 @@
       <LastGenOutput>Blake2b.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
+    <None Update="Blake2bContext.tt">
+      <LastGenOutput>Blake2bContext.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="Blake2bScalar.tt">
       <LastGenOutput>Blake2bScalar.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -88,6 +110,10 @@
     </None>
     <None Update="Blake2s.tt">
       <LastGenOutput>Blake2s.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2sContext.tt">
+      <LastGenOutput>Blake2sContext.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Blake2sScalar.tt">
