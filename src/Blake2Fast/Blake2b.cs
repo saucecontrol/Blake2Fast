@@ -70,10 +70,10 @@ namespace SauceControl.Blake2Fast
 		/// <inheritdoc cref="ComputeHash(int, ByteSpan, ByteSpan)"/>
 		public static byte[] ComputeHash(int digestLength, byte[] key, byte[] input) => ComputeHash(digestLength, key.AsByteSpan(), input.AsByteSpan());
 
-		/// <inheritdoc cref="ComputeHash(int, ByteSpan, ByteSpan)"/>
+		/// <inheritdoc cref="CreateIncrementalHasher(int, ByteSpan)" />
 		public static IBlake2Incremental CreateIncrementalHasher(byte[] key) => CreateIncrementalHasher(key.AsByteSpan());
 
-		/// <inheritdoc cref="ComputeHash(int, ByteSpan, ByteSpan)"/>
+		/// <inheritdoc cref="CreateIncrementalHasher(int, ByteSpan)" />
 		public static IBlake2Incremental CreateIncrementalHasher(int digestLength, byte[] key) => CreateIncrementalHasher(digestLength, key.AsByteSpan());
 #endif
 

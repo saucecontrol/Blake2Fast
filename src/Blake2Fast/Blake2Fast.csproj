@@ -9,22 +9,23 @@
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <LangVersion>latest</LangVersion>
-    <VersionPrefix>0.1.0-rc1</VersionPrefix>
+    <VersionPrefix>0.1.0</VersionPrefix>
     <Authors>Clinton Ingram</Authors>
     <Product>Blake2Fast</Product>
     <Description>Optimized implementations of the Blake2b and Blake2s hashing algorithms.  Uses SSE2-SSE4.1 intrinsics support on .NET Core 2.1</Description>
-    <PackageTags>Blake2 Hash Blake2b Blake2s SSE SIMD</PackageTags>
     <Copyright>Copyright © 2018 Clinton Ingram</Copyright>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
-    <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
     <PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/saucecontrol/Blake2Fast</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/license</PackageLicenseUrl>
+    <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
+    <PackageTags>Blake2 Hash Blake2b Blake2s SSE SIMD HashAlgorithm HMAC</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp2.1'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0' Or '$(TargetFramework)'=='netcoreapp2.1'">
     <DefineConstants>$(DefineConstants);IMPLICIT_BYTESPAN</DefineConstants>
   </PropertyGroup>
 
@@ -42,6 +43,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
+    <PackageReference Include="GitLink" Version="3.1.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
