@@ -194,10 +194,6 @@ namespace SauceControl.Blake2Fast
 			}
 		}
 
-#if !IMPLICIT_BYTESPAN
-		public void Update(byte[] input) => Update(input.AsByteSpan());
-#endif
-
 		private void finish(WriteableByteSpan hash)
 		{
 			if (this.f[0] != 0)
@@ -235,10 +231,13 @@ namespace SauceControl.Blake2Fast
 			return hash;
 		}
 
-#if FAST_SPAN
 		public bool TryFinish(WriteableByteSpan output, out int bytesWritten)
 		{
+#if FAST_SPAN
 			if (output.Length < outlen)
+#else
+			if (output.Count < outlen)
+#endif
 			{
 				bytesWritten = 0;
 				return false;
@@ -248,6 +247,11 @@ namespace SauceControl.Blake2Fast
 			bytesWritten = (int)outlen;
 			return true;
 		}
+
+#if !IMPLICIT_BYTESPAN
+		public void Update(byte[] input) => Update(input.AsByteSpan());
+
+		public bool TryFinish(byte[] output, out int bytesWritten) => TryFinish(output.AsByteSpan(), out bytesWritten);
 #endif
 	}
 }

@@ -6,35 +6,32 @@
     <AssemblyTitle>Blake2Fast</AssemblyTitle>
     <TargetFrameworks>netstandard1.0;netstandard1.3;netstandard2.0;netcoreapp2.0;netcoreapp2.1;net45</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugType>pdbonly</DebugType>
-    <DebugSymbols>true</DebugSymbols>
     <LangVersion>latest</LangVersion>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <Authors>Clinton Ingram</Authors>
     <Product>Blake2Fast</Product>
-    <Description>Optimized implementations of the Blake2b and Blake2s hashing algorithms.  Uses SSE2-SSE4.1 intrinsics support on .NET Core 2.1</Description>
+    <Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms.  Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1</Description>
     <Copyright>Copyright © 2018 Clinton Ingram</Copyright>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
     <PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/saucecontrol/Blake2Fast</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/license</PackageLicenseUrl>
+    <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/blob/master/license</PackageLicenseUrl>
     <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
-    <PackageTags>Blake2 Hash Blake2b Blake2s SSE SIMD HashAlgorithm HMAC</PackageTags>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE SIMD HashAlgorithm HMAC</PackageTags>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0' Or '$(TargetFramework)'=='netcoreapp2.1'">
-    <DefineConstants>$(DefineConstants);IMPLICIT_BYTESPAN</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <DefineConstants>$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.0' Or '$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);IMPLICIT_BYTESPAN</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\SauceControl.Blake2Fast.xml</DocumentationFile>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">

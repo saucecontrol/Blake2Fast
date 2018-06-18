@@ -2,11 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.1;netcoreapp2.0;netcoreapp1.0;net46</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'!='netcoreapp1.0'">
-    <DefineConstants>$(DefineConstants);ICRYPTOTRANSFORM</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetFramework)'!='netcoreapp1.0'">$(DefineConstants);ICRYPTOTRANSFORM</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);FAST_SPAN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

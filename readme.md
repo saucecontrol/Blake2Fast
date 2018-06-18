@@ -1,7 +1,7 @@
 Blake2Fast
 ==========
 
-These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant Blake2 implementations have been tuned for high speed and low memory usage.  The .NET Core 2.1 build supports the new X86 SIMD Intrinsics for even greater speed and `Span<T>` for even lower memory usage.
+These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant BLAKE2 implementations have been tuned for high speed and low memory usage.  The .NET Core 2.1 build supports the new X86 SIMD Intrinsics for even greater speed and `Span<T>` for even lower memory usage.
 
 Sample benchmark results comparing with built-in .NET algorithms, 10MiB input, .NET Core 2.1 x64 and x86 runtimes:
 
@@ -19,7 +19,7 @@ MD5 |      X86 |  20.06 ms | 0.0996 ms | 0.0931 ms |       0 B |
 SHA256 |      X86 |  52.47 ms | 0.3252 ms | 0.3042 ms |       0 B |
 SHA512 |      X86 |  44.07 ms | 0.1643 ms | 0.1372 ms |       0 B |
 
-You can find more detailed comparison between Blake2Fast and other .NET Blake2 implementations starting [here](https://photosauce.net/blog/post/fast-hashing-with-blake2-part-1-nuget-is-a-minefield)
+You can find more detailed comparison between Blake2Fast and other .NET BLAKE2 implementations starting [here](https://photosauce.net/blog/post/fast-hashing-with-blake2-part-1-nuget-is-a-minefield)
 
 Installation
 ------------
@@ -36,26 +36,29 @@ Usage
 ### All-at-Once Hashing
 
 The simplest and lightest-weight way to calculate a hash is the all-at-once `ComputeHash` method.
+
 ```C#
-Blake2b.ComputeHash(data);
+var hash = Blake2b.ComputeHash(data);
 ```
 
-Blake2 supports variable digest lengths from 1 to 32 bytes for `Blake2s` or 1 to 64 bytes for `Blake2b`.
+BLAKE2 supports variable digest lengths from 1 to 32 bytes for BLAKE2s or 1 to 64 bytes for BLAKE2b.
+
 ```C#
-Blake2b.ComputeHash(48, data);
+var hash = Blake2b.ComputeHash(42, data);
 ```
 
-Blake2 also natively supports keyed hashing.
+BLAKE2 also natively supports keyed hashing.
+
 ```C#
-Blake2b.ComputeHash(key, data);
+var hash = Blake2b.ComputeHash(key, data);
 ```
 
 ### Incremental Hashing
 
-Blake2 hashes can be incrementally updated if you do not have the data available all at once.
+BLAKE2 hashes can be incrementally updated if you do not have the data available all at once.
 
 ```C#
-async Task<byte[]> CalculateHashAsync(Stream data)
+async Task<byte[]> ComputeHashAsync(Stream data)
 {
     var incHash = Blake2b.CreateIncrementalHasher();
     var buffer = new byte[4096];
@@ -71,11 +74,30 @@ async Task<byte[]> CalculateHashAsync(Stream data)
 }
 ```
 
+### Allocation-Free Hashing
+
+The output hash digest can be written to an existing buffer to avoid allocating a new array each time.  This is especially useful when performing an iterative hash, as might be used in a [key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function).
+
+```C#
+byte[] DeriveBytes(string password, byte[] salt)
+{
+    // Create key from password, then hash the salt using the key
+    var pwkey = Blake2b.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+    var hbuff = Blake2b.ComputeHash(pwkey, salt);
+
+    // Hash the hash lots of times, re-using the same buffer
+    for (int i = 0; i < 1_000_000; i++)
+        Blake2b.ComputeAndWriteHash(pwkey, hbuff, hbuff);
+
+    return hbuff;
+}
+```
+
 ### System.Security.Cryptography Interop
 
 For interoperating with code that uses `System.Security.Cryptography` primitives, Blake2Fast can create a `HashAlgorithm` wrapper.  The wrapper inherits from `HMAC` in case keyed hashing is required.
 
-`HashAlgorithm` is less efficient than the above methods, so use it only when necessary.
+`HashAlgorithm` is less efficient than the above methods, so use it only when necessary for compatibility.
 
 ```C#
 byte[] WriteDataAndCalculateHash(byte[] data)

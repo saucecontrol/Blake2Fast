@@ -4,6 +4,11 @@ using System.Linq;
 using Xunit;
 using SauceControl.Blake2Fast;
 
+internal static class ArrayExtension
+{
+	public static ArraySegment<T> Slice<T>(this T[] a, int start, int count) => new ArraySegment<T>(a, start, count);
+}
+
 public class RfcSelfTest
 {
 	private static readonly byte[] blake2bCheck = new byte[] {
@@ -69,6 +74,56 @@ public class RfcSelfTest
 		}
 
 		return inc.Finish().SequenceEqual(blake2sCheck);
+	}
+
+	private static bool blake2bNoAllocSelfTest()
+	{
+#if FAST_SPAN
+		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
+#else
+		var buff = new byte[Blake2b.DefaultDigestLength];
+#endif
+		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
+
+		foreach (int diglen in new[] { 20, 32, 48, 64 })
+		foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
+		{
+			var msg = getTestSequence(msglen);
+			var key = getTestSequence(diglen);
+
+			Blake2b.ComputeAndWriteHash(diglen, msg, buff);
+			inc.Update(buff.Slice(0, diglen));
+
+			Blake2b.ComputeAndWriteHash(diglen, key, msg, buff);
+			inc.Update(buff.Slice(0, diglen));
+		}
+
+		return inc.TryFinish(buff, out int len) && buff.Slice(0, len).SequenceEqual(blake2bCheck);
+	}
+
+	private static bool blake2sNoAllocSelfTest()
+	{
+#if FAST_SPAN
+		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
+#else
+		var buff = new byte[Blake2b.DefaultDigestLength];
+#endif
+		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
+
+		foreach (int diglen in new[] { 16, 20, 28, 32 })
+		foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
+		{
+			var msg = getTestSequence(msglen);
+			var key = getTestSequence(diglen);
+
+			Blake2s.ComputeAndWriteHash(diglen, msg, buff);
+			inc.Update(buff.Slice(0, diglen));
+
+			Blake2s.ComputeAndWriteHash(diglen, key, msg, buff);
+			inc.Update(buff.Slice(0, diglen));
+		}
+
+		return inc.TryFinish(buff, out int len) && buff.Slice(0, len).SequenceEqual(blake2sCheck);
 	}
 
 	private static bool blake2bHmacSelfTest()
@@ -155,6 +210,18 @@ public class RfcSelfTest
 	public void TestBlake2s()
 	{
 		Assert.True(blake2sSelfTest());
+	}
+
+	[Fact]
+	public void TestBlake2bNoAlloc()
+	{
+		Assert.True(blake2bNoAllocSelfTest());
+	}
+
+	[Fact]
+	public void TestBlake2sNoAlloc()
+	{
+		Assert.True(blake2sNoAllocSelfTest());
 	}
 
 	[Fact]
