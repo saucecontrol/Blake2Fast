@@ -47,9 +47,9 @@ namespace SauceControl.Blake2Fast
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
 		{
-			this.t[0] += len;
-			if (this.t[0] < len)
-				this.t[1]++;
+			t[0] += len;
+			if (t[0] < len)
+				t[1]++;
 		}
 
 		unsafe private static void compress(Blake2sContext* s, byte* input)
@@ -93,20 +93,20 @@ namespace SauceControl.Blake2Fast
 				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
 			outlen = (uint)digestLength;
-			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref this.h[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
-			this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
+			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref h[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
+			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
 #if USE_INTRINSICS
-			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref this.viv[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
-			Unsafe.CopyBlock(ref this.vrm[0], ref rormask[0], 32);
+			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref viv[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
+			Unsafe.CopyBlock(ref vrm[0], ref rormask[0], 32);
 #endif
 
 			if (keylen > 0)
 			{
 #if FAST_SPAN
-				Unsafe.CopyBlock(ref this.b[0], ref MemoryMarshal.GetReference(key), keylen);
+				Unsafe.CopyBlock(ref b[0], ref MemoryMarshal.GetReference(key), keylen);
 #else
-				Unsafe.CopyBlock(ref this.b[0], ref key.Array[key.Offset], keylen);
+				Unsafe.CopyBlock(ref b[0], ref key.Array[key.Offset], keylen);
 #endif
 				c = BlockBytes;
 			}
@@ -127,9 +127,9 @@ namespace SauceControl.Blake2Fast
 				if (blockrem > 0)
 				{
 #if FAST_SPAN
-					Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(input), blockrem);
+					Unsafe.CopyBlockUnaligned(ref b[c], ref MemoryMarshal.GetReference(input), blockrem);
 #else
-					Unsafe.CopyBlockUnaligned(ref this.b[c], ref input.Array[input.Offset], blockrem);
+					Unsafe.CopyBlockUnaligned(ref b[c], ref input.Array[input.Offset], blockrem);
 #endif
 				}
 				addLength(BlockBytes);
@@ -163,9 +163,9 @@ namespace SauceControl.Blake2Fast
 			if (inlen > 0)
 			{
 #if FAST_SPAN
-				Unsafe.CopyBlockUnaligned(ref this.b[c], ref MemoryMarshal.GetReference(input.Slice((int)clen)), inlen);
+				Unsafe.CopyBlockUnaligned(ref b[c], ref MemoryMarshal.GetReference(input.Slice((int)clen)), inlen);
 #else
-				Unsafe.CopyBlockUnaligned(ref this.b[c], ref input.Array[input.Offset + clen], inlen);
+				Unsafe.CopyBlockUnaligned(ref b[c], ref input.Array[input.Offset + clen], inlen);
 #endif
 				c += inlen;
 			}
@@ -173,30 +173,30 @@ namespace SauceControl.Blake2Fast
 
 		private void finish(WriteableByteSpan hash)
 		{
-			if (this.f[0] != 0)
+			if (f[0] != 0)
 				throw new InvalidOperationException("Hash has already been finalized.");
 
 			if (c < BlockBytes)
-				Unsafe.InitBlockUnaligned(ref this.b[c], 0, BlockBytes - c);
+				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 			addLength(c);
-			this.f[0] = unchecked((uint)~0);
+			f[0] = unchecked((uint)~0);
 			fixed (Blake2sContext* s = &this)
 				compress(s, s->b);
 
 #if FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
 			{
-				var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref this.h[0]), HashBytes);
+				var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<uint, byte>(ref h[0]), HashBytes);
 				for (int i = 0; i < HashWords; i++)
-					this.h[i] = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(i * WordSize, WordSize));
+					h[i] = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(i * WordSize, WordSize));
 			}
 #endif
 
 #if FAST_SPAN
-			Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<uint, byte>(ref this.h[0]), outlen);
+			Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<uint, byte>(ref h[0]), outlen);
 #else
-			Unsafe.CopyBlock(ref hash.Array[hash.Offset], ref Unsafe.As<uint, byte>(ref this.h[0]), outlen);
+			Unsafe.CopyBlock(ref hash.Array[hash.Offset], ref Unsafe.As<uint, byte>(ref h[0]), outlen);
 #endif
 		}
 

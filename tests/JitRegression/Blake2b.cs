@@ -38,9 +38,9 @@ unsafe internal partial struct Blake2bContext
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void addLength(uint len)
 	{
-		this.t[0] += len;
-		if (this.t[0] < len)
-			this.t[1]++;
+		t[0] += len;
+		if (t[0] < len)
+			t[1]++;
 	}
 
 	private void compress(byte* data)
@@ -74,13 +74,13 @@ unsafe internal partial struct Blake2bContext
 		if (keylen > MaxKeyBytes)
 			throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
-		Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref this.h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
-		this.h[0] ^= 0x01010000u ^ (keylen << 8) ^ (uint)outlen;
+		Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
+		h[0] ^= 0x01010000u ^ (keylen << 8) ^ (uint)outlen;
 		this.outlen = (uint)outlen;
 
 		if (keylen > 0)
 		{
-			Unsafe.CopyBlock(ref this.b[0], ref key[0], keylen);
+			Unsafe.CopyBlock(ref b[0], ref key[0], keylen);
 			c = BlockBytes;
 		}
 	}
@@ -95,7 +95,7 @@ unsafe internal partial struct Blake2bContext
 		if ((c > 0u) && (inlen > blockrem))
 		{
 			if (blockrem > 0)
-				Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[0], blockrem);
+				Unsafe.CopyBlockUnaligned(ref b[c], ref data[0], blockrem);
 
 			addLength(BlockBytes);
 			fixed (Blake2bContext* s = &this)
@@ -122,26 +122,26 @@ unsafe internal partial struct Blake2bContext
 
 		if (inlen > 0)
 		{
-			Unsafe.CopyBlockUnaligned(ref this.b[c], ref data[clen], inlen);
+			Unsafe.CopyBlockUnaligned(ref b[c], ref data[clen], inlen);
 			c += inlen;
 		}
 	}
 
 	public byte[] Finish()
 	{
-		if (this.f[0] != 0)
+		if (f[0] != 0)
 			throw new InvalidOperationException(nameof(Finish) + " has already been used.  It cannot be called again on this instance.");
 
 		if (c < BlockBytes)
-			Unsafe.InitBlockUnaligned(ref this.b[c], 0, BlockBytes - c);
+			Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 		addLength(c);
-		this.f[0] = unchecked((ulong)~0);
+		f[0] = unchecked((ulong)~0);
 		fixed (Blake2bContext* s = &this)
 			compress(s->b);
 
 		var hash = new byte[outlen];
-		Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<ulong, byte>(ref this.h[0]), outlen);
+		Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
 
 		this = default;
 		return hash;
