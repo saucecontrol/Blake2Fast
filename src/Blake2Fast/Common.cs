@@ -1,10 +1,4 @@
-﻿#if FAST_SPAN
-using ByteSpan = System.ReadOnlySpan<byte>;
-using WriteableByteSpan = System.Span<byte>;
-#else
-using ByteSpan = System.ArraySegment<byte>;
-using WriteableByteSpan = System.ArraySegment<byte>;
-#endif
+﻿using System;
 
 namespace SauceControl.Blake2Fast
 {
@@ -14,7 +8,7 @@ namespace SauceControl.Blake2Fast
 	{
 		/// <summary>Update the hash state with the message bytes contained in <paramref name="input" />.</summary>
 		/// <param name="input">The message bytes to add to the hash state.</param>
-		void Update(ByteSpan input);
+		void Update(ReadOnlySpan<byte> input);
 
 		/// <summary>Finalize the hash, and return the computed digest.</summary>
 		/// <returns>The computed hash digest.</returns>
@@ -24,19 +18,6 @@ namespace SauceControl.Blake2Fast
 		/// <param name="output">The buffer into which the hash digest should be written.</param>
 		/// <param name="bytesWritten">On return, contains the number of bytes written to <paramref name="output" />.</param>
 		/// <returns>True if the <paramref name="output" /> buffer was large enough to hold the digest, otherwise False.</returns>
-		bool TryFinish(WriteableByteSpan output, out int bytesWritten);
-
-#if !IMPLICIT_BYTESPAN
-		/// <inheritdoc cref="Update(ByteSpan)" />
-		void Update(byte[] input);
-
-		/// <inheritdoc cref="TryFinish(ByteSpan, out int)" />
-		bool TryFinish(byte[] output, out int bytesWritten);
-#endif
-	}
-
-	internal static class ByteSpanExtension
-	{
-		public static ByteSpan AsByteSpan(this byte[] a) => a is null ? default : new ByteSpan(a);
+		bool TryFinish(Span<byte> output, out int bytesWritten);
 	}
 }

@@ -4,7 +4,7 @@
     <RootNamespace>SauceControl.Blake2Fast</RootNamespace>
     <AssemblyName>SauceControl.Blake2Fast</AssemblyName>
     <AssemblyTitle>Blake2Fast</AssemblyTitle>
-    <TargetFrameworks>netstandard1.0;netstandard1.3;netstandard2.0;netcoreapp2.0;netcoreapp2.1;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;net45</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <VersionPrefix>0.2.0</VersionPrefix>
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.0' Or '$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);IMPLICIT_BYTESPAN</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);USE_CRYPTOGRAPHY</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
@@ -36,6 +36,10 @@
 
   <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">
     <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$(DefineConstants.Contains('FAST_SPAN'))">
+    <PackageReference Include="System.Memory" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>

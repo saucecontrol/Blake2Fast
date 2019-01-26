@@ -1,12 +1,6 @@
-﻿#if !NETSTANDARD1_0
+﻿#if USE_CRYPTOGRAPHY
 using System;
 using System.Security.Cryptography;
-
-#if FAST_SPAN
-using ByteSpan = System.ReadOnlySpan<byte>;
-#else
-using ByteSpan = System.ArraySegment<byte>;
-#endif
 
 namespace SauceControl.Blake2Fast
 {
@@ -19,36 +13,27 @@ namespace SauceControl.Blake2Fast
 	internal sealed class Blake2HMAC : HMAC
 	{
 #if NETSTANDARD1_3
-		private int HashSizeValue;
+		private readonly int HashSizeValue;
 		public sealed override int HashSize => HashSizeValue;
 #endif
 
 		private Blake2Algorithm alg;
 		private IBlake2Incremental impl;
 
-		public Blake2HMAC(Blake2Algorithm hashAlg, int hashBytes, ByteSpan key)
+		public Blake2HMAC(Blake2Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
 		{
 			alg = hashAlg;
 			HashSizeValue = hashBytes * 8;
 			HashName = alg.ToString();
 
-#if FAST_SPAN
 			if (key.Length > 0)
-				KeyValue = key.ToArray();
-#else
-			if (key.Count > 0)
-			{
-				var keyCopy = new byte[key.Count];
-				Buffer.BlockCopy(key.Array, key.Offset, keyCopy, 0, key.Count);
 #if NETSTANDARD1_3
-				base.Key = keyCopy;
+				base.Key = key.ToArray();
 #else
-				KeyValue = keyCopy;
-#endif
-			}
+				KeyValue = key.ToArray();
 #endif
 
-				Initialize();
+			Initialize();
 		}
 
 		public override byte[] Key
@@ -59,17 +44,18 @@ namespace SauceControl.Blake2Fast
 
 		public sealed override void Initialize()
 		{
-			impl = alg == Blake2Algorithm.Blake2b ?
 #if NETSTANDARD1_3
-				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, base.Key.AsByteSpan()) :
-				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, base.Key.AsByteSpan());
+			var key = new ReadOnlySpan<byte>(base.Key);
 #else
-				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, KeyValue.AsByteSpan()) :
-				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, KeyValue.AsByteSpan());
+			var key = new ReadOnlySpan<byte>(KeyValue);
 #endif
+
+			impl = alg == Blake2Algorithm.Blake2b ?
+				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
+				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
 		}
 
-		protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) => impl.Update(new ByteSpan(array, ibStart, cbSize));
+		protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) => impl.Update(new ReadOnlySpan<byte>(array, ibStart, cbSize));
 
 		protected sealed override byte[] HashFinal() => impl.Finish();
 

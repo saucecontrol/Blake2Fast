@@ -1,18 +1,10 @@
 ﻿using System;
+using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
 using System.Runtime.Intrinsics.X86;
-#endif
-
-#if FAST_SPAN
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
-using ByteSpan = System.ReadOnlySpan<byte>;
-using WriteableByteSpan = System.Span<byte>;
-#else
-using ByteSpan = System.ArraySegment<byte>;
-using WriteableByteSpan = System.ArraySegment<byte>;
 #endif
 
 namespace SauceControl.Blake2Fast
@@ -74,7 +66,7 @@ namespace SauceControl.Blake2Fast
 				mixScalar(s, m);
 		}
 
-		public void Init(int digestLength = HashBytes, ByteSpan key = default)
+		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
 		{
 #if !FAST_SPAN
 			if (!BitConverter.IsLittleEndian)
@@ -84,11 +76,7 @@ namespace SauceControl.Blake2Fast
 			if (digestLength == 0 || (uint)digestLength > HashBytes)
 				throw new ArgumentOutOfRangeException(nameof(digestLength), $"Value must be between 1 and {HashBytes}");
 
-#if FAST_SPAN
 			uint keylen = (uint)key.Length;
-#else
-			uint keylen = (uint)key.Count;
-#endif
 			if (keylen > MaxKeyBytes)
 				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
@@ -103,35 +91,22 @@ namespace SauceControl.Blake2Fast
 
 			if (keylen > 0)
 			{
-#if FAST_SPAN
 				Unsafe.CopyBlock(ref b[0], ref MemoryMarshal.GetReference(key), keylen);
-#else
-				Unsafe.CopyBlock(ref b[0], ref key.Array[key.Offset], keylen);
-#endif
 				c = BlockBytes;
 			}
 		}
 
-		public void Update(ByteSpan input)
+		public void Update(ReadOnlySpan<byte> input)
 		{
-#if FAST_SPAN
 			uint inlen = (uint)input.Length;
-#else
-			uint inlen = (uint)input.Count;
-#endif
 			uint clen = 0u;
 			uint blockrem = BlockBytes - c;
 
 			if ((c > 0u) && (inlen > blockrem))
 			{
 				if (blockrem > 0)
-				{
-#if FAST_SPAN
 					Unsafe.CopyBlockUnaligned(ref b[c], ref MemoryMarshal.GetReference(input), blockrem);
-#else
-					Unsafe.CopyBlockUnaligned(ref b[c], ref input.Array[input.Offset], blockrem);
-#endif
-				}
+
 				addLength(BlockBytes);
 				fixed (Blake2bContext* s = &this)
 					compress(s, s->b);
@@ -143,11 +118,7 @@ namespace SauceControl.Blake2Fast
 
 			if (inlen + clen > BlockBytes)
 			{
-#if FAST_SPAN
 				fixed (byte* pinput = &input[0])
-#else
-				fixed (byte* pinput = &input.Array[input.Offset])
-#endif
 				fixed (Blake2bContext* s = &this)
 				while (inlen > BlockBytes)
 				{
@@ -162,16 +133,12 @@ namespace SauceControl.Blake2Fast
 
 			if (inlen > 0)
 			{
-#if FAST_SPAN
 				Unsafe.CopyBlockUnaligned(ref b[c], ref MemoryMarshal.GetReference(input.Slice((int)clen)), inlen);
-#else
-				Unsafe.CopyBlockUnaligned(ref b[c], ref input.Array[input.Offset + clen], inlen);
-#endif
 				c += inlen;
 			}
 		}
 
-		private void finish(WriteableByteSpan hash)
+		private void finish(Span<byte> hash)
 		{
 			if (f[0] != 0)
 				throw new InvalidOperationException("Hash has already been finalized.");
@@ -193,28 +160,20 @@ namespace SauceControl.Blake2Fast
 			}
 #endif
 
-#if FAST_SPAN
 			Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
-#else
-			Unsafe.CopyBlock(ref hash.Array[hash.Offset], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
-#endif
 		}
 
 		public byte[] Finish()
 		{
 			byte[] hash = new byte[outlen];
-			finish(new WriteableByteSpan(hash));
+			finish(new Span<byte>(hash));
 
 			return hash;
 		}
 
-		public bool TryFinish(WriteableByteSpan output, out int bytesWritten)
+		public bool TryFinish(Span<byte> output, out int bytesWritten)
 		{
-#if FAST_SPAN
 			if (output.Length < outlen)
-#else
-			if (output.Count < outlen)
-#endif
 			{
 				bytesWritten = 0;
 				return false;
@@ -224,11 +183,5 @@ namespace SauceControl.Blake2Fast
 			bytesWritten = (int)outlen;
 			return true;
 		}
-
-#if !IMPLICIT_BYTESPAN
-		public void Update(byte[] input) => Update(input.AsByteSpan());
-
-		public bool TryFinish(byte[] output, out int bytesWritten) => TryFinish(output.AsByteSpan(), out bytesWritten);
-#endif
 	}
 }
