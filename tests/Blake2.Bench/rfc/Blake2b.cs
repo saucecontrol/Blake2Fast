@@ -78,8 +78,9 @@ namespace Blake2Rfc
             if (last)                                // last block flag set ?
                 v[14] = ~v[14];
 
+            fixed (byte* pb = &ctx.b[0])
             for (uint i = 0; i < 16; i++)            // get little-endian words
-                m[i] = getUInt64(&ctx.b[sizeof(ulong) * i]);
+                m[i] = getUInt64(&pb[sizeof(ulong) * i]);
 
             for (uint i = 0; i < 12; i++) {          // twelve rounds
                 mix(ref v[0], ref v[4], ref v[ 8], ref v[12], m[sigma[i][ 0]], m[sigma[i][ 1]]);
