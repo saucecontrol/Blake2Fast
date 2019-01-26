@@ -24,10 +24,13 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_32(Vector128<ulong> x) => Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
+		private static Vector128<ulong> ror64_63(Vector128<ulong> x) =>
+			Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
 
+#if OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_63(Vector128<ulong> x) => Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
+		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
+			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
@@ -44,48 +47,6 @@ namespace SauceControl.Blake2Fast
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
 			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), m));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g1(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<sbyte> r24)
-		{
-			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
-			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
-
-			row4l = Sse2.Xor(row4l, row1l);
-			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_32(row4l);
-			row4h = ror64_32(row4h);
-
-			row3l = Sse2.Add(row3l, row4l);
-			row3h = Sse2.Add(row3h, row4h);
-
-			row2l = Sse2.Xor(row2l, row3l);
-			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_shuffle(row2l, r24);
-			row2h = ror64_shuffle(row2h, r24);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g2(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<sbyte> r16)
-		{
-			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
-			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
-
-			row4l = Sse2.Xor(row4l, row1l);
-			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_shuffle(row4l, r16);
-			row4h = ror64_shuffle(row4h, r16);
-
-			row3l = Sse2.Add(row3l, row4l);
-			row3h = Sse2.Add(row3h, row4h);
-
-			row2l = Sse2.Xor(row2l, row3l);
-			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_63(row2l);
-			row2h = ror64_63(row2h);
-		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
@@ -124,6 +85,107 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(t1);
 			row4h = Sse.StaticCast<sbyte, ulong>(t0);
 		}
+#else
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
+			Sse2.Shuffle(x.AsUInt32(), 0b_10_11_00_01).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
+			Ssse3.Shuffle(x.AsSByte(), y).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> alignr_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+			Ssse3.AlignRight(x, y, m);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
+			Sse2.Shuffle(x.AsUInt32(), m).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
+		{
+			var t0 = Ssse3.AlignRight(row2h, row2l, 8);
+			var t1 = Ssse3.AlignRight(row2l, row2h, 8);
+			row2l = t0;
+			row2h = t1;
+
+			b0 = row3l;
+			row3l = row3h;
+			row3h = b0;
+
+			t0 = Ssse3.AlignRight(row4h, row4l, 8);
+			t1 = Ssse3.AlignRight(row4l, row4h, 8);
+			row4l = t1;
+			row4h = t0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void undiagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
+		{
+			var t0 = Ssse3.AlignRight(row2l, row2h, 8);
+			var t1 = Ssse3.AlignRight(row2h, row2l, 8);
+			row2l = t0;
+			row2h = t1;
+
+			b0 = row3l;
+			row3l = row3h;
+			row3h = b0;
+
+			t0 = Ssse3.AlignRight(row4l, row4h, 8);
+			t1 = Ssse3.AlignRight(row4h, row4l, 8);
+			row4l = t1;
+			row4h = t0;
+		}
+#endif
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void g1(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, in Vector128<ulong> b0, in Vector128<ulong> b1, in Vector128<sbyte> r24)
+		{
+			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
+			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
+
+			row4l = Sse2.Xor(row4l, row1l);
+			row4h = Sse2.Xor(row4h, row1h);
+			row4l = ror64_32(row4l);
+			row4h = ror64_32(row4h);
+
+			row3l = Sse2.Add(row3l, row4l);
+			row3h = Sse2.Add(row3h, row4h);
+
+			row2l = Sse2.Xor(row2l, row3l);
+			row2h = Sse2.Xor(row2h, row3h);
+			row2l = ror64_shuffle(row2l, r24);
+			row2h = ror64_shuffle(row2h, r24);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void g2(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, in Vector128<ulong> b0, in Vector128<ulong> b1, in Vector128<sbyte> r16)
+		{
+			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
+			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
+
+			row4l = Sse2.Xor(row4l, row1l);
+			row4h = Sse2.Xor(row4h, row1h);
+			row4l = ror64_shuffle(row4l, r16);
+			row4h = ror64_shuffle(row4h, r16);
+
+			row3l = Sse2.Add(row3l, row4l);
+			row3h = Sse2.Add(row3h, row4h);
+
+			row2l = Sse2.Xor(row2l, row3l);
+			row2h = Sse2.Xor(row2h, row3h);
+			row2l = ror64_63(row2l);
+			row2h = ror64_63(row2h);
+		}
 
 		unsafe private static void mixSse41(Blake2bContext* s, ulong* m)
 		{
@@ -155,13 +217,13 @@ for (int i = 0; i < 12; i++) {
 	loadcode(i, 0);
 #>
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 <#
 	loadcode(i, 1);
 #>
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 <#
@@ -178,13 +240,13 @@ for (int i = 0; i < 12; i++) {
 	loadcode(i, 2);
 #>
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 <#
 	loadcode(i, 3);
 #>
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 <#

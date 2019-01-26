@@ -24,16 +24,17 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
-			Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(x), y));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> ror32_12(Vector128<uint> x) =>
 			Sse2.Xor(Sse2.ShiftRightLogical(x, 12), Sse2.ShiftLeftLogical(x, 20));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> ror32_7(Vector128<uint> x) =>
 			Sse2.Xor(Sse2.ShiftRightLogical(x, 7), Sse2.ShiftLeftLogical(x, 25));
+
+#if OLD_INTRINSICS
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
+			Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(x), y));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> blend_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
@@ -54,9 +55,34 @@ namespace SauceControl.Blake2Fast
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> shufflehigh_uint(Vector128<uint> x, byte m) =>
 			Sse.StaticCast<ushort, uint>(Sse2.ShuffleHigh(Sse.StaticCast<uint, ushort>(x), m));
+#else
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
+			Ssse3.Shuffle(x.AsSByte(), y).AsUInt32();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g1(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, ref Vector128<uint> b0, ref Vector128<sbyte> r16)
+		private static Vector128<uint> blend_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
+			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt32();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> unpackhigh64_uint(Vector128<uint> x, Vector128<uint> y) =>
+			Sse2.UnpackHigh(x, y);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> unpacklow64_uint(Vector128<uint> x, Vector128<uint> y) =>
+			Sse2.UnpackLow(x, y);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> shuffle2_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
+			Sse.Shuffle(x.AsSingle(), y.AsSingle(), m).AsUInt32();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<uint> shufflehigh_uint(Vector128<uint> x, byte m) =>
+			Sse2.ShuffleHigh(x.AsUInt16(), m).AsUInt32();
+#endif
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void g1(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, in Vector128<uint> b0, in Vector128<sbyte> r16)
 		{
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
@@ -67,7 +93,7 @@ namespace SauceControl.Blake2Fast
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g2(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, ref Vector128<uint> b0, ref Vector128<sbyte> r8)
+		private static void g2(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, in Vector128<uint> b0, in Vector128<sbyte> r8)
 		{
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
@@ -117,26 +143,26 @@ for (int i = 0; i < 10; i++) {
 	loadcode(i, 0);
 #>
 
-			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
+			g1(ref row1, ref row2, ref row3, ref row4, b0, r16);
 
 <#
 	loadcode(i, 1);
 #>
 
-			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
+			g2(ref row1, ref row2, ref row3, ref row4, b0, r8);
 			diagonalize(ref row1, ref row2, ref row3, ref row4);
 
 <#
 	loadcode(i, 2);
 #>
 
-			g1(ref row1, ref row2, ref row3, ref row4, ref b0, ref r16);
+			g1(ref row1, ref row2, ref row3, ref row4, b0, r16);
 
 <#
 	loadcode(i, 3);
 #>
 
-			g2(ref row1, ref row2, ref row3, ref row4, ref b0, ref r8);
+			g2(ref row1, ref row2, ref row3, ref row4, b0, r8);
 			undiagonalize(ref row1, ref row2, ref row3, ref row4);
 
 <#

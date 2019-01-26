@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp2.0;netcoreapp1.0;net46</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;netcoreapp2.1;netcoreapp2.0;netcoreapp1.0;net46</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)'!='netcoreapp1.0'">$(DefineConstants);ICRYPTOTRANSFORM</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);FAST_SPAN</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);FAST_SPAN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

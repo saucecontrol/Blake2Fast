@@ -20,10 +20,13 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_32(Vector128<ulong> x) => Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
+		private static Vector128<ulong> ror64_63(Vector128<ulong> x) =>
+			Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
 
+#if OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_63(Vector128<ulong> x) => Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
+		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
+			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
@@ -40,48 +43,6 @@ namespace SauceControl.Blake2Fast
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
 			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), m));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g1(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<sbyte> r24)
-		{
-			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
-			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
-
-			row4l = Sse2.Xor(row4l, row1l);
-			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_32(row4l);
-			row4h = ror64_32(row4h);
-
-			row3l = Sse2.Add(row3l, row4l);
-			row3h = Sse2.Add(row3h, row4h);
-
-			row2l = Sse2.Xor(row2l, row3l);
-			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_shuffle(row2l, r24);
-			row2h = ror64_shuffle(row2h, r24);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g2(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0, ref Vector128<ulong> b1, ref Vector128<sbyte> r16)
-		{
-			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
-			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
-
-			row4l = Sse2.Xor(row4l, row1l);
-			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_shuffle(row4l, r16);
-			row4h = ror64_shuffle(row4h, r16);
-
-			row3l = Sse2.Add(row3l, row4l);
-			row3h = Sse2.Add(row3h, row4h);
-
-			row2l = Sse2.Xor(row2l, row3l);
-			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_63(row2l);
-			row2h = ror64_63(row2h);
-		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
@@ -120,6 +81,107 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(t1);
 			row4h = Sse.StaticCast<sbyte, ulong>(t0);
 		}
+#else
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
+			Sse2.Shuffle(x.AsUInt32(), 0b_10_11_00_01).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
+			Ssse3.Shuffle(x.AsSByte(), y).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> alignr_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+			Ssse3.AlignRight(x, y, m);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
+			Sse2.Shuffle(x.AsUInt32(), m).AsUInt64();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
+		{
+			var t0 = Ssse3.AlignRight(row2h, row2l, 8);
+			var t1 = Ssse3.AlignRight(row2l, row2h, 8);
+			row2l = t0;
+			row2h = t1;
+
+			b0 = row3l;
+			row3l = row3h;
+			row3h = b0;
+
+			t0 = Ssse3.AlignRight(row4h, row4l, 8);
+			t1 = Ssse3.AlignRight(row4l, row4h, 8);
+			row4l = t1;
+			row4h = t0;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void undiagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
+		{
+			var t0 = Ssse3.AlignRight(row2l, row2h, 8);
+			var t1 = Ssse3.AlignRight(row2h, row2l, 8);
+			row2l = t0;
+			row2h = t1;
+
+			b0 = row3l;
+			row3l = row3h;
+			row3h = b0;
+
+			t0 = Ssse3.AlignRight(row4l, row4h, 8);
+			t1 = Ssse3.AlignRight(row4h, row4l, 8);
+			row4l = t1;
+			row4h = t0;
+		}
+#endif
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void g1(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, in Vector128<ulong> b0, in Vector128<ulong> b1, in Vector128<sbyte> r24)
+		{
+			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
+			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
+
+			row4l = Sse2.Xor(row4l, row1l);
+			row4h = Sse2.Xor(row4h, row1h);
+			row4l = ror64_32(row4l);
+			row4h = ror64_32(row4h);
+
+			row3l = Sse2.Add(row3l, row4l);
+			row3h = Sse2.Add(row3h, row4h);
+
+			row2l = Sse2.Xor(row2l, row3l);
+			row2h = Sse2.Xor(row2h, row3h);
+			row2l = ror64_shuffle(row2l, r24);
+			row2h = ror64_shuffle(row2h, r24);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void g2(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
+			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, in Vector128<ulong> b0, in Vector128<ulong> b1, in Vector128<sbyte> r16)
+		{
+			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
+			row1h = Sse2.Add(Sse2.Add(row1h, b1), row2h);
+
+			row4l = Sse2.Xor(row4l, row1l);
+			row4h = Sse2.Xor(row4h, row1h);
+			row4l = ror64_shuffle(row4l, r16);
+			row4h = ror64_shuffle(row4h, r16);
+
+			row3l = Sse2.Add(row3l, row4l);
+			row3h = Sse2.Add(row3h, row4h);
+
+			row2l = Sse2.Xor(row2l, row3l);
+			row2h = Sse2.Xor(row2h, row3h);
+			row2l = ror64_63(row2l);
+			row2h = ror64_63(row2h);
+		}
 
 		unsafe private static void mixSse41(Blake2bContext* s, ulong* m)
 		{
@@ -148,12 +210,12 @@ namespace SauceControl.Blake2Fast
 			var r16 = Sse2.LoadVector128((sbyte*)s->vrm);
 			var r24 = Sse2.LoadVector128((sbyte*)s->vrm + 16);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m0, m1);
 			b1 = Sse2.UnpackHigh(m2, m3);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			var m4 = Sse2.LoadVector128(m + 8);
@@ -164,265 +226,265 @@ namespace SauceControl.Blake2Fast
 			b0 = Sse2.UnpackLow(m4, m5);
 			b1 = Sse2.UnpackLow(m6, m7);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m4, m5);
 			b1 = Sse2.UnpackHigh(m6, m7);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 2
 			b0 = Sse2.UnpackLow(m7, m2);
 			b1 = Sse2.UnpackHigh(m4, m6);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m5, m4);
 			b1 = alignr_ulong(m3, m7, 8);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
 			b1 = Sse2.UnpackHigh(m5, m2);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m6, m1);
 			b1 = Sse2.UnpackHigh(m3, m1);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 3
 			b0 = alignr_ulong(m6, m5, 8);
 			b1 = Sse2.UnpackHigh(m2, m7);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m4, m0);
 			b1 = blend_ulong(m1, m6, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = blend_ulong(m5, m1, 0b_1111_0000);
 			b1 = Sse2.UnpackHigh(m3, m4);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m7, m3);
 			b1 = alignr_ulong(m2, m0, 8);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 4
 			b0 = Sse2.UnpackHigh(m3, m1);
 			b1 = Sse2.UnpackHigh(m6, m5);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m4, m0);
 			b1 = Sse2.UnpackLow(m6, m7);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = blend_ulong(m1, m2, 0b_1111_0000);
 			b1 = blend_ulong(m2, m7, 0b_1111_0000);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m3, m5);
 			b1 = Sse2.UnpackLow(m0, m4);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 5
 			b0 = Sse2.UnpackHigh(m4, m2);
 			b1 = Sse2.UnpackLow(m1, m5);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = blend_ulong(m0, m3, 0b_1111_0000);
 			b1 = blend_ulong(m2, m7, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = blend_ulong(m7, m5, 0b_1111_0000);
 			b1 = blend_ulong(m3, m1, 0b_1111_0000);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = alignr_ulong(m6, m0, 8);
 			b1 = blend_ulong(m4, m6, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 6
 			b0 = Sse2.UnpackLow(m1, m3);
 			b1 = Sse2.UnpackLow(m0, m4);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m6, m5);
 			b1 = Sse2.UnpackHigh(m5, m1);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = blend_ulong(m2, m3, 0b_1111_0000);
 			b1 = Sse2.UnpackHigh(m7, m0);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m6, m2);
 			b1 = blend_ulong(m7, m4, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 7
 			b0 = blend_ulong(m6, m0, 0b_1111_0000);
 			b1 = Sse2.UnpackLow(m7, m2);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m2, m7);
 			b1 = alignr_ulong(m5, m6, 8);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackLow(m0, m3);
 			b1 = shuffle_ulong(m4, 0b_01_00_11_10);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m3, m1);
 			b1 = blend_ulong(m1, m5, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 8
 			b0 = Sse2.UnpackHigh(m6, m3);
 			b1 = blend_ulong(m6, m1, 0b_1111_0000);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = alignr_ulong(m7, m5, 8);
 			b1 = Sse2.UnpackHigh(m0, m4);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackHigh(m2, m7);
 			b1 = Sse2.UnpackLow(m4, m1);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m0, m2);
 			b1 = Sse2.UnpackLow(m3, m5);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 9
 			b0 = Sse2.UnpackLow(m3, m7);
 			b1 = alignr_ulong(m0, m5, 8);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m7, m4);
 			b1 = alignr_ulong(m4, m1, 8);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = m6;
 			b1 = alignr_ulong(m5, m0, 8);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = blend_ulong(m1, m3, 0b_1111_0000);
 			b1 = m2;
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 10
 			b0 = Sse2.UnpackLow(m5, m4);
 			b1 = Sse2.UnpackHigh(m3, m0);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m1, m2);
 			b1 = blend_ulong(m3, m2, 0b_1111_0000);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackHigh(m7, m4);
 			b1 = Sse2.UnpackHigh(m1, m6);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = alignr_ulong(m7, m5, 8);
 			b1 = Sse2.UnpackLow(m6, m0);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 11
 			b0 = Sse2.UnpackLow(m0, m1);
 			b1 = Sse2.UnpackLow(m2, m3);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m0, m1);
 			b1 = Sse2.UnpackHigh(m2, m3);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackLow(m4, m5);
 			b1 = Sse2.UnpackLow(m6, m7);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m4, m5);
 			b1 = Sse2.UnpackHigh(m6, m7);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 12
 			b0 = Sse2.UnpackLow(m7, m2);
 			b1 = Sse2.UnpackHigh(m4, m6);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m5, m4);
 			b1 = alignr_ulong(m3, m7, 8);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
 			b1 = Sse2.UnpackHigh(m5, m2);
 
-			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r24);
+			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m6, m1);
 			b1 = Sse2.UnpackHigh(m3, m1);
 
-			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0, ref b1, ref r16);
+			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			row1l = Sse2.Xor(row1l, row3l);

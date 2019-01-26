@@ -29,7 +29,7 @@ static class BenchConfig
 	//public static readonly byte[] Data = System.IO.File.ReadAllBytes(@"c:\windows\system32\spool\drivers\color\srgb.icm");
 	public static readonly byte[] Data = new byte[1024 * 1024 * 10].RandomFill();
 
-	public static string ToHexString(this byte[] a) => String.Concat(a.Select(x => x.ToString("X2")));
+	public static string ToHexString(this byte[] a) => string.Concat(a.Select(x => x.ToString("X2")));
 
 	public static byte[] RandomFill(this byte[] a)
 	{

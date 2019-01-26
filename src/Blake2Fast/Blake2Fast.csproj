@@ -4,7 +4,7 @@
     <RootNamespace>SauceControl.Blake2Fast</RootNamespace>
     <AssemblyName>SauceControl.Blake2Fast</AssemblyName>
     <AssemblyTitle>Blake2Fast</AssemblyTitle>
-    <TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <VersionPrefix>0.2.0</VersionPrefix>
@@ -24,7 +24,8 @@
 
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);USE_CRYPTOGRAPHY</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);OLD_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -34,7 +35,7 @@
     <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS'))">
+  <ItemGroup Condition="$(DefineConstants.Contains('OLD_INTRINSICS'))">
     <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
   </ItemGroup>
 
@@ -44,7 +45,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
-    <PackageReference Include="GitLink" Version="3.1.0" PrivateAssets="all" />
+    <!--PackageReference Include="GitLink" Version="3.1.0" PrivateAssets="all" /-->
   </ItemGroup>
 
   <ItemGroup>
