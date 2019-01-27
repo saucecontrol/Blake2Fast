@@ -66,11 +66,11 @@ namespace SauceControl.Blake2Fast
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> unpackhigh64_uint(Vector128<uint> x, Vector128<uint> y) =>
-			Sse2.UnpackHigh(x, y);
+			Sse2.UnpackHigh(x.AsUInt64(), y.AsUInt64()).AsUInt32();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> unpacklow64_uint(Vector128<uint> x, Vector128<uint> y) =>
-			Sse2.UnpackLow(x, y);
+			Sse2.UnpackLow(x.AsUInt64(), y.AsUInt64()).AsUInt32();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> shuffle2_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
