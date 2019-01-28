@@ -20,30 +20,6 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(x), Sse.StaticCast<ulong, ushort>(y), m));
-#else
-			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt64();
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> alignr_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(x), Sse.StaticCast<ulong, sbyte>(y), m));
-#else
-			Ssse3.AlignRight(x, y, m);
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), m));
-#else
-			Sse2.Shuffle(x.AsUInt32(), m).AsUInt64();
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
 			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
 		{
@@ -228,12 +204,20 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m5, m4);
-			b1 = alignr_ulong(m3, m7, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m3), Sse.StaticCast<ulong, sbyte>(m7), 8));
+#else
+			b1 = Ssse3.AlignRight(m3, m7, 8);
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m0), 0b_01_00_11_10));
+#else
+			b0 = Sse2.Shuffle(m0.AsUInt32(), 0b_01_00_11_10).AsUInt64();
+#endif
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
@@ -245,24 +229,40 @@ namespace SauceControl.Blake2Fast
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 3
-			b0 = alignr_ulong(m6, m5, 8);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m6), Sse.StaticCast<ulong, sbyte>(m5), 8));
+#else
+			b0 = Ssse3.AlignRight(m6, m5, 8);
+#endif
 			b1 = Sse2.UnpackHigh(m2, m7);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m4, m0);
-			b1 = blend_ulong(m1, m6, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m6), 0b_1111_0000));
+#else
+			b1 = Sse41.Blend(m1.AsUInt16(), m6.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m5, m1, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m5), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m5.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 			b1 = Sse2.UnpackHigh(m3, m4);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m7, m3);
-			b1 = alignr_ulong(m2, m0, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m2), Sse.StaticCast<ulong, sbyte>(m0), 8));
+#else
+			b1 = Ssse3.AlignRight(m2, m0, 8);
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
@@ -279,8 +279,13 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m1, m2, 0b_1111_0000);
-			b1 = blend_ulong(m2, m7, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m2), 0b_1111_0000));
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m7), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
+			b1 = Sse41.Blend(m2.AsUInt16(), m7.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
@@ -296,19 +301,34 @@ namespace SauceControl.Blake2Fast
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
-			b0 = blend_ulong(m0, m3, 0b_1111_0000);
-			b1 = blend_ulong(m2, m7, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m0), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m7), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
+			b1 = Sse41.Blend(m2.AsUInt16(), m7.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m7, m5, 0b_1111_0000);
-			b1 = blend_ulong(m3, m1, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m7), Sse.StaticCast<ulong, ushort>(m5), 0b_1111_0000));
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m3), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m7.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
+			b1 = Sse41.Blend(m3.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
-			b0 = alignr_ulong(m6, m0, 8);
-			b1 = blend_ulong(m4, m6, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m6), Sse.StaticCast<ulong, sbyte>(m0), 8));
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m4), Sse.StaticCast<ulong, ushort>(m6), 0b_1111_0000));
+#else
+			b0 = Ssse3.AlignRight(m6, m0, 8);
+			b1 = Sse41.Blend(m4.AsUInt16(), m6.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
@@ -325,47 +345,79 @@ namespace SauceControl.Blake2Fast
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = blend_ulong(m2, m3, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m2.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 			b1 = Sse2.UnpackHigh(m7, m0);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m6, m2);
-			b1 = blend_ulong(m7, m4, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m7), Sse.StaticCast<ulong, ushort>(m4), 0b_1111_0000));
+#else
+			b1 = Sse41.Blend(m7.AsUInt16(), m4.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 7
-			b0 = blend_ulong(m6, m0, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m6), Sse.StaticCast<ulong, ushort>(m0), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m6.AsUInt16(), m0.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 			b1 = Sse2.UnpackLow(m7, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m2, m7);
-			b1 = alignr_ulong(m5, m6, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m5), Sse.StaticCast<ulong, sbyte>(m6), 8));
+#else
+			b1 = Ssse3.AlignRight(m5, m6, 8);
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = Sse2.UnpackLow(m0, m3);
-			b1 = shuffle_ulong(m4, 0b_01_00_11_10);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m4), 0b_01_00_11_10));
+#else
+			b1 = Sse2.Shuffle(m4.AsUInt32(), 0b_01_00_11_10).AsUInt64();
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m3, m1);
-			b1 = blend_ulong(m1, m5, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m5), 0b_1111_0000));
+#else
+			b1 = Sse41.Blend(m1.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			undiagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			//ROUND 8
 			b0 = Sse2.UnpackHigh(m6, m3);
-			b1 = blend_ulong(m6, m1, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m6), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
+#else
+			b1 = Sse41.Blend(m6.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
-			b0 = alignr_ulong(m7, m5, 8);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m7), Sse.StaticCast<ulong, sbyte>(m5), 8));
+#else
+			b0 = Ssse3.AlignRight(m7, m5, 8);
+#endif
 			b1 = Sse2.UnpackHigh(m0, m4);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
@@ -384,22 +436,38 @@ namespace SauceControl.Blake2Fast
 
 			//ROUND 9
 			b0 = Sse2.UnpackLow(m3, m7);
-			b1 = alignr_ulong(m0, m5, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m0), Sse.StaticCast<ulong, sbyte>(m5), 8));
+#else
+			b1 = Ssse3.AlignRight(m0, m5, 8);
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackHigh(m7, m4);
-			b1 = alignr_ulong(m4, m1, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m4), Sse.StaticCast<ulong, sbyte>(m1), 8));
+#else
+			b1 = Ssse3.AlignRight(m4, m1, 8);
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
 			b0 = m6;
-			b1 = alignr_ulong(m5, m0, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m5), Sse.StaticCast<ulong, sbyte>(m0), 8));
+#else
+			b1 = Ssse3.AlignRight(m5, m0, 8);
+#endif
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
-			b0 = blend_ulong(m1, m3, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
+#else
+			b0 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 			b1 = m2;
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
@@ -412,7 +480,11 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m1, m2);
-			b1 = blend_ulong(m3, m2, 0b_1111_0000);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m3), Sse.StaticCast<ulong, ushort>(m2), 0b_1111_0000));
+#else
+			b1 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
@@ -422,7 +494,11 @@ namespace SauceControl.Blake2Fast
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
-			b0 = alignr_ulong(m7, m5, 8);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m7), Sse.StaticCast<ulong, sbyte>(m5), 8));
+#else
+			b0 = Ssse3.AlignRight(m7, m5, 8);
+#endif
 			b1 = Sse2.UnpackLow(m6, m0);
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
@@ -458,12 +534,20 @@ namespace SauceControl.Blake2Fast
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
 
 			b0 = Sse2.UnpackLow(m5, m4);
-			b1 = alignr_ulong(m3, m7, 8);
+#if OLD_INTRINSICS
+			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m3), Sse.StaticCast<ulong, sbyte>(m7), 8));
+#else
+			b1 = Ssse3.AlignRight(m3, m7, 8);
+#endif
 
 			g2(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r16);
 			diagonalize(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, ref b0);
 
-			b0 = shuffle_ulong(m0, 0b_01_00_11_10);
+#if OLD_INTRINSICS
+			b0 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m0), 0b_01_00_11_10));
+#else
+			b0 = Sse2.Shuffle(m0.AsUInt32(), 0b_01_00_11_10).AsUInt64();
+#endif
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			g1(ref row1l, ref row2l, ref row3l, ref row4l, ref row1h, ref row2h, ref row3h, ref row4h, b0, b1, r24);
