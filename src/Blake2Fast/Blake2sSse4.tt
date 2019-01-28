@@ -10,7 +10,6 @@
 //------------------------------------------------------------------------------
 
 #if USE_INTRINSICS
-using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
 
@@ -23,54 +22,9 @@ namespace SauceControl.Blake2Fast
 			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13 //r16
 		};
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g1(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, in Vector128<uint> b0, in Vector128<sbyte> r16)
-		{
-			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-			row4 = Sse2.Xor(row4, row1);
-#if OLD_INTRINSICS
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
-			row4 = Ssse3.Shuffle(row4.AsSByte(), r16).AsUInt32();
+#if !OLD_INTRINSICS
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif
-
-			row3 = Sse2.Add(row3, row4);
-			row2 = Sse2.Xor(row2, row3);
-			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 20));
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void g2(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4, in Vector128<uint> b0, in Vector128<sbyte> r8)
-		{
-			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-			row4 = Sse2.Xor(row4, row1);
-#if OLD_INTRINSICS
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
-			row4 = Ssse3.Shuffle(row4.AsSByte(), r8).AsUInt32();
-#endif
-
-			row3 = Sse2.Add(row3, row4);
-			row2 = Sse2.Xor(row2, row3);
-			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 7), Sse2.ShiftLeftLogical(row2, 25));
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void diagonalize(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4)
-		{
-			row4 = Sse2.Shuffle(row4, 0b_10_01_00_11);
-			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
-			row2 = Sse2.Shuffle(row2, 0b_00_11_10_01);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void undiagonalize(ref Vector128<uint> row1, ref Vector128<uint> row2, ref Vector128<uint> row3, ref Vector128<uint> row4)
-		{
-			row4 = Sse2.Shuffle(row4, 0b_00_11_10_01);
-			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
-			row2 = Sse2.Shuffle(row2, 0b_10_01_00_11);
-		}
-
 		unsafe private static void mixSse41(Blake2sContext* s, uint* m)
 		{
 			var row1 = Sse2.LoadVector128(s->h);
@@ -93,31 +47,16 @@ namespace SauceControl.Blake2Fast
 for (int i = 0; i < 10; i++) {
 	WriteLine($"\t\t\t//ROUND {i+1}");
 	loadcode(i, 0);
-#>
-
-			g1(ref row1, ref row2, ref row3, ref row4, b0, r16);
-
-<#
+	g1();
 	loadcode(i, 1);
-#>
+	g2();
+	diagonalize();
 
-			g2(ref row1, ref row2, ref row3, ref row4, b0, r8);
-			diagonalize(ref row1, ref row2, ref row3, ref row4);
-
-<#
 	loadcode(i, 2);
-#>
-
-			g1(ref row1, ref row2, ref row3, ref row4, b0, r16);
-
-<#
+	g1();
 	loadcode(i, 3);
-#>
-
-			g2(ref row1, ref row2, ref row3, ref row4, b0, r8);
-			undiagonalize(ref row1, ref row2, ref row3, ref row4);
-
-<#
+	g2();
+	undiagonalize();
 }
 #>
 			row1 = Sse2.Xor(row1, row3);
@@ -131,6 +70,64 @@ for (int i = 0; i < 10; i++) {
 }
 #endif
 <#+
+
+void diagonalize() {
+#>
+			//DIAGONALIZE
+			row4 = Sse2.Shuffle(row4, 0b_10_01_00_11);
+			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
+			row2 = Sse2.Shuffle(row2, 0b_00_11_10_01);
+
+<#+
+}
+
+void undiagonalize() {
+#>
+			//UNDIAGONALIZE
+			row4 = Sse2.Shuffle(row4, 0b_00_11_10_01);
+			row3 = Sse2.Shuffle(row3, 0b_01_00_11_10);
+			row2 = Sse2.Shuffle(row2, 0b_10_01_00_11);
+
+<#+
+}
+
+void g1() {
+#>
+
+			//G1
+			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
+			row4 = Sse2.Xor(row4, row1);
+#if OLD_INTRINSICS
+			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
+#else
+			row4 = Ssse3.Shuffle(row4.AsSByte(), r16).AsUInt32();
+#endif
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Sse2.Xor(row2, row3);
+			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 20));
+
+<#+
+}
+
+void g2() {
+#>
+
+			//G2
+			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
+			row4 = Sse2.Xor(row4, row1);
+#if OLD_INTRINSICS
+			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
+#else
+			row4 = Ssse3.Shuffle(row4.AsSByte(), r8).AsUInt32();
+#endif
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Sse2.Xor(row2, row3);
+			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 7), Sse2.ShiftLeftLogical(row2, 25));
+
+<#+
+}
 
 void loadcode(int round, int part) {
 	int r = round % 10 * 10 + part;
