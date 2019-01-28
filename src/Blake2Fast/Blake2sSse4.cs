@@ -20,22 +20,6 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> ror32_12(Vector128<uint> x) =>
-			Sse2.Xor(Sse2.ShiftRightLogical(x, 12), Sse2.ShiftLeftLogical(x, 20));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> ror32_7(Vector128<uint> x) =>
-			Sse2.Xor(Sse2.ShiftRightLogical(x, 7), Sse2.ShiftLeftLogical(x, 25));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(x), y));
-#else
-			Ssse3.Shuffle(x.AsSByte(), y).AsUInt32();
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> blend_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
 #if OLD_INTRINSICS
 			Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(x), Sse.StaticCast<uint, ushort>(y), m));
@@ -80,10 +64,15 @@ namespace SauceControl.Blake2Fast
 		{
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-			row4 = ror32_shuffle(row4, r16);
+#if OLD_INTRINSICS
+			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
+#else
+			row4 = Ssse3.Shuffle(row4.AsSByte(), r16).AsUInt32();
+#endif
+
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
-			row2 = ror32_12(row2);
+			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 20));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,10 +80,15 @@ namespace SauceControl.Blake2Fast
 		{
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-			row4 = ror32_shuffle(row4, r8);
+#if OLD_INTRINSICS
+			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
+#else
+			row4 = Ssse3.Shuffle(row4.AsSByte(), r8).AsUInt32();
+#endif
+
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
-			row2 = ror32_7(row2);
+			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 7), Sse2.ShiftLeftLogical(row2, 25));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

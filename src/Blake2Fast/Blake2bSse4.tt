@@ -24,26 +24,6 @@ namespace SauceControl.Blake2Fast
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_63(Vector128<ulong> x) =>
-			Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
-#else
-			Sse2.Shuffle(x.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
-#if OLD_INTRINSICS
-			Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(x), y));
-#else
-			Ssse3.Shuffle(x.AsSByte(), y).AsUInt64();
-#endif
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
 #if OLD_INTRINSICS
 			Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(x), Sse.StaticCast<ulong, ushort>(y), m));
@@ -142,16 +122,28 @@ namespace SauceControl.Blake2Fast
 
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_32(row4l);
-			row4h = ror64_32(row4h);
+
+#if OLD_INTRINSICS
+			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
+			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
+#else
+			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
+			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
+#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
 
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_shuffle(row2l, r24);
-			row2h = ror64_shuffle(row2h, r24);
+
+#if OLD_INTRINSICS
+			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
+			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
+#else
+			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+#endif
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -163,16 +155,23 @@ namespace SauceControl.Blake2Fast
 
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
-			row4l = ror64_shuffle(row4l, r16);
-			row4h = ror64_shuffle(row4h, r16);
+
+#if OLD_INTRINSICS
+			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
+			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
+#else
+			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
 
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
-			row2l = ror64_63(row2l);
-			row2h = ror64_63(row2h);
+
+			row2l = Sse2.Xor(Sse2.ShiftRightLogical(row2l, 63), Sse2.Add(row2l, row2l));
+			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 		}
 
 		unsafe private static void mixSse41(Blake2bContext* s, ulong* m)
