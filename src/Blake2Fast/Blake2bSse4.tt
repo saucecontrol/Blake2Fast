@@ -27,123 +27,111 @@ namespace SauceControl.Blake2Fast
 		private static Vector128<ulong> ror64_63(Vector128<ulong> x) =>
 			Sse2.Xor(Sse2.ShiftRightLogical(x, 63), Sse2.Add(x, x));
 
-#if OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), 0b_10_11_00_01));
+#else
+			Sse2.Shuffle(x.AsUInt32(), 0b_10_11_00_01).AsUInt64();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(x), y));
+#else
+			Ssse3.Shuffle(x.AsSByte(), y).AsUInt64();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(x), Sse.StaticCast<ulong, ushort>(y), m));
+#else
+			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt64();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> alignr_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(x), Sse.StaticCast<ulong, sbyte>(y), m));
+#else
+			Ssse3.AlignRight(x, y, m);
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(x), m));
+#else
+			Sse2.Shuffle(x.AsUInt32(), m).AsUInt64();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
 			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
 		{
+#if OLD_INTRINSICS
 			var t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
 			var t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
 			row2l = Sse.StaticCast<sbyte, ulong>(t0);
 			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-
-			b0 = row3l;
-			row3l = row3h;
-			row3h = b0;
-
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void undiagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
-		{
-			var t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			var t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-
-			b0 = row3l;
-			row3l = row3h;
-			row3h = b0;
-
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-		}
 #else
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_32(Vector128<ulong> x) =>
-			Sse2.Shuffle(x.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> ror64_shuffle(Vector128<ulong> x, Vector128<sbyte> y) =>
-			Ssse3.Shuffle(x.AsSByte(), y).AsUInt64();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> blend_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
-			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt64();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> alignr_ulong(Vector128<ulong> x, Vector128<ulong> y, byte m) =>
-			Ssse3.AlignRight(x, y, m);
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<ulong> shuffle_ulong(Vector128<ulong> x, byte m) =>
-			Sse2.Shuffle(x.AsUInt32(), m).AsUInt64();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void diagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
-			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
-		{
 			var t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			var t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
+#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
+#if OLD_INTRINSICS
+			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
+			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
+			row4l = Sse.StaticCast<sbyte, ulong>(t1);
+			row4h = Sse.StaticCast<sbyte, ulong>(t0);
+#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
+#endif
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void undiagonalize(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,
 			ref Vector128<ulong> row1h, ref Vector128<ulong> row2h, ref Vector128<ulong> row3h, ref Vector128<ulong> row4h, ref Vector128<ulong> b0)
 		{
+#if OLD_INTRINSICS
+			var t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
+			var t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
+			row2l = Sse.StaticCast<sbyte, ulong>(t0);
+			row2h = Sse.StaticCast<sbyte, ulong>(t1);
+#else
 			var t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			var t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
+#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
+#if OLD_INTRINSICS
+			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
+			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
+			row4l = Sse.StaticCast<sbyte, ulong>(t1);
+			row4h = Sse.StaticCast<sbyte, ulong>(t0);
+#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-		}
 #endif
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void g1(ref Vector128<ulong> row1l, ref Vector128<ulong> row2l, ref Vector128<ulong> row3l, ref Vector128<ulong> row4l,

@@ -27,53 +27,51 @@ namespace SauceControl.Blake2Fast
 		private static Vector128<uint> ror32_7(Vector128<uint> x) =>
 			Sse2.Xor(Sse2.ShiftRightLogical(x, 7), Sse2.ShiftLeftLogical(x, 25));
 
-#if OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(x), y));
+#else
+			Ssse3.Shuffle(x.AsSByte(), y).AsUInt32();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> blend_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(x), Sse.StaticCast<uint, ushort>(y), m));
+#else
+			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt32();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> unpackhigh64_uint(Vector128<uint> x, Vector128<uint> y) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(x), Sse.StaticCast<uint, ulong>(y)));
+#else
+			Sse2.UnpackHigh(x.AsUInt64(), y.AsUInt64()).AsUInt32();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> unpacklow64_uint(Vector128<uint> x, Vector128<uint> y) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(x), Sse.StaticCast<uint, ulong>(y)));
+#else
+			Sse2.UnpackLow(x.AsUInt64(), y.AsUInt64()).AsUInt32();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> shuffle2_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<float, uint>(Sse.Shuffle(Sse.StaticCast<uint, float>(x), Sse.StaticCast<uint, float>(y), m));
+#else
+			Sse.Shuffle(x.AsSingle(), y.AsSingle(), m).AsUInt32();
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static Vector128<uint> shufflehigh_uint(Vector128<uint> x, byte m) =>
+#if OLD_INTRINSICS
 			Sse.StaticCast<ushort, uint>(Sse2.ShuffleHigh(Sse.StaticCast<uint, ushort>(x), m));
 #else
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> ror32_shuffle(Vector128<uint> x, Vector128<sbyte> y) =>
-			Ssse3.Shuffle(x.AsSByte(), y).AsUInt32();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> blend_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
-			Sse41.Blend(x.AsUInt16(), y.AsUInt16(), m).AsUInt32();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> unpackhigh64_uint(Vector128<uint> x, Vector128<uint> y) =>
-			Sse2.UnpackHigh(x.AsUInt64(), y.AsUInt64()).AsUInt32();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> unpacklow64_uint(Vector128<uint> x, Vector128<uint> y) =>
-			Sse2.UnpackLow(x.AsUInt64(), y.AsUInt64()).AsUInt32();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> shuffle2_uint(Vector128<uint> x, Vector128<uint> y, byte m) =>
-			Sse.Shuffle(x.AsSingle(), y.AsSingle(), m).AsUInt32();
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static Vector128<uint> shufflehigh_uint(Vector128<uint> x, byte m) =>
 			Sse2.ShuffleHigh(x.AsUInt16(), m).AsUInt32();
 #endif
 
