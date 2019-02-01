@@ -13,11 +13,6 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe partial struct Blake2bContext
 	{
-		private static readonly byte[] rormask = new byte[] {
-			2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9, //r16
-			3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10  //r24
-		};
-
 #if !OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif
@@ -28,10 +23,10 @@ namespace SauceControl.Blake2Fast
 			var row2l = Sse2.LoadVector128(s->h + 4);
 			var row2h = Sse2.LoadVector128(s->h + 6);
 
-			var row3l = Sse2.LoadVector128(s->viv);
-			var row3h = Sse2.LoadVector128(s->viv + 2);
-			var row4l = Sse2.LoadVector128(s->viv + 4);
-			var row4h = Sse2.LoadVector128(s->viv + 6);
+			var row3l = v128iv0;
+			var row3h = v128iv1;
+			var row4l = v128iv2;
+			var row4h = v128iv3;
 
 			row4l = Sse2.Xor(row4l, Sse2.LoadVector128(s->t));
 			row4h = Sse2.Xor(row4h, Sse2.LoadVector128(s->f));
@@ -42,11 +37,11 @@ namespace SauceControl.Blake2Fast
 			var m2 = Sse2.LoadVector128(m + 4);
 			var m3 = Sse2.LoadVector128(m + 6);
 
+			var r24 = v128rm0;
+			var r16 = v128rm1;
+
 			var b0 = Sse2.UnpackLow(m0, m1);
 			var b1 = Sse2.UnpackLow(m2, m3);
-
-			var r16 = Sse2.LoadVector128((sbyte*)s->vrm);
-			var r24 = Sse2.LoadVector128((sbyte*)s->vrm + 16);
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);

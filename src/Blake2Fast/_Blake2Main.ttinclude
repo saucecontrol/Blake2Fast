@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -22,23 +23,101 @@ namespace SauceControl.Blake2Fast
 		//public const int PersonalizationBytes = 2 * WordSize;
 #>
 
-		private static readonly <#= alg.wtype #>[] iv = new[] {
-			<#= string.Format(alg.ivfmt, alg.iv[0]) #>, <#= string.Format(alg.ivfmt, alg.iv[1]) #>,
-			<#= string.Format(alg.ivfmt, alg.iv[2]) #>, <#= string.Format(alg.ivfmt, alg.iv[3]) #>,
-			<#= string.Format(alg.ivfmt, alg.iv[4]) #>, <#= string.Format(alg.ivfmt, alg.iv[5]) #>,
-			<#= string.Format(alg.ivfmt, alg.iv[6]) #>, <#= string.Format(alg.ivfmt, alg.iv[7]) #>
-		};
+		private static readonly <#= alg.wtype #>[] iv;
+
+#if USE_INTRINSICS
+		private static readonly Vector128<<#= alg.wtype #>> v128iv0;
+		private static readonly Vector128<<#= alg.wtype #>> v128iv1;
+<#
+if (alg.bits == 64) {
+#>
+		private static readonly Vector128<<#= alg.wtype #>> v128iv2;
+		private static readonly Vector128<<#= alg.wtype #>> v128iv3;
+<#
+}
+#>
+		private static readonly Vector128<sbyte> v128rm0;
+		private static readonly Vector128<sbyte> v128rm1;
+<#
+if (alg.bits == 64) {
+#>
+
+#if USE_AVX2
+		private static readonly Vector256<<#= alg.wtype #>> v256iv0;
+		private static readonly Vector256<<#= alg.wtype #>> v256iv1;
+		private static readonly Vector256<sbyte> v256rm0;
+		private static readonly Vector256<sbyte> v256rm1;
+#endif
+<#
+}
+#>
+#endif
 
 		private fixed byte b[BlockBytes];
 		private fixed <#= alg.wtype #> h[HashWords];
 		private fixed <#= alg.wtype #> t[2];
 		private fixed <#= alg.wtype #> f[2];
-#if USE_INTRINSICS
-		private fixed <#= alg.wtype #> viv[HashWords];
-		private fixed byte vrm[32];
-#endif
 		private uint c;
 		private uint outlen;
+
+		unsafe static Blake2<#= alg.suffix #>Context()
+		{
+			iv = new[] {
+				<#= string.Format(alg.ivfmt, alg.iv[0]) #>, <#= string.Format(alg.ivfmt, alg.iv[1]) #>,
+				<#= string.Format(alg.ivfmt, alg.iv[2]) #>, <#= string.Format(alg.ivfmt, alg.iv[3]) #>,
+				<#= string.Format(alg.ivfmt, alg.iv[4]) #>, <#= string.Format(alg.ivfmt, alg.iv[5]) #>,
+				<#= string.Format(alg.ivfmt, alg.iv[6]) #>, <#= string.Format(alg.ivfmt, alg.iv[7]) #>
+			};
+
+#if USE_INTRINSICS
+			fixed (<#= alg.wtype #>* p = &iv[0])
+			{
+				v128iv0 = Sse2.LoadVector128(p);
+				v128iv1 = Sse2.LoadVector128(p + <#= 128 / alg.bits #>);
+<#
+if (alg.bits == 64) {
+#>
+				v128iv2 = Sse2.LoadVector128(p + 4);
+				v128iv3 = Sse2.LoadVector128(p + 6);
+<#
+}
+#>
+			}
+
+			sbyte* rormask = stackalloc sbyte[] {
+<#
+if (alg.bits == 64) {
+#>
+				3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
+				2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
+<#
+} else {
+#>
+				2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
+				1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
+<#
+}
+#>
+			};
+
+			v128rm0 = Sse2.LoadVector128(rormask);
+			v128rm1 = Sse2.LoadVector128(rormask + 16);
+<#
+if (alg.bits == 64) {
+#>
+
+#if USE_AVX2
+			v256iv0 = Vector256.Create(v128iv0, v128iv1);
+			v256iv1 = Vector256.Create(v128iv2, v128iv3);
+
+			v256rm0 = Vector256.Create(v128rm0, v128rm0);
+			v256rm1 = Vector256.Create(v128rm1, v128rm1);
+#endif
+<#
+}
+#>
+#endif
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
@@ -63,6 +142,17 @@ namespace SauceControl.Blake2Fast
 #endif
 
 #if USE_INTRINSICS
+<#
+if (alg.bits == 64) {
+#>
+#if USE_AVX2
+			if (Avx2.IsSupported)
+				mixAvx2(s, m);
+			else
+#endif
+<#
+}
+#>
 			if (Sse41.IsSupported)
 				mixSse41(s, m);
 			else
@@ -87,11 +177,6 @@ namespace SauceControl.Blake2Fast
 			outlen = (uint)digestLength;
 			Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), ref Unsafe.As<<#= alg.wtype #>, byte>(ref iv[0]), HashBytes);
 			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
-
-#if USE_INTRINSICS
-			Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref viv[0]), ref Unsafe.As<<#= alg.wtype #>, byte>(ref iv[0]), HashBytes);
-			Unsafe.CopyBlock(ref vrm[0], ref rormask[0], 32);
-#endif
 
 <#
 			// Salt and Personalization support can be added like this.

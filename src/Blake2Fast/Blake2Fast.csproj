@@ -20,11 +20,15 @@
     <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
     <PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE SIMD HashAlgorithm HMAC</PackageTags>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <AssemblyOriginatorKeyFile>SauceControl.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);USE_CRYPTOGRAPHY</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);OLD_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);USE_AVX2</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
@@ -73,6 +77,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
+    <Compile Update="Blake2bAvx2.cs">
+      <DependentUpon>Blake2bAvx2.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
     <Compile Update="Blake2s.cs">
       <DependentUpon>Blake2s.tt</DependentUpon>
       <DesignTime>True</DesignTime>
@@ -110,6 +119,10 @@
     </None>
     <None Update="Blake2bSse4.tt">
       <LastGenOutput>Blake2bSse4.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+    <None Update="Blake2bAvx2.tt">
+      <LastGenOutput>Blake2bAvx2.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Blake2s.tt">

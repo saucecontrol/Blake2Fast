@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -18,23 +19,47 @@ namespace SauceControl.Blake2Fast
 		public const int HashBytes = HashWords * WordSize;
 		public const int MaxKeyBytes = HashBytes;
 
-		private static readonly uint[] iv = new[] {
-			0x6A09E667u, 0xBB67AE85u,
-			0x3C6EF372u, 0xA54FF53Au,
-			0x510E527Fu, 0x9B05688Cu,
-			0x1F83D9ABu, 0x5BE0CD19u
-		};
+		private static readonly uint[] iv;
+
+#if USE_INTRINSICS
+		private static readonly Vector128<uint> v128iv0;
+		private static readonly Vector128<uint> v128iv1;
+		private static readonly Vector128<sbyte> v128rm0;
+		private static readonly Vector128<sbyte> v128rm1;
+#endif
 
 		private fixed byte b[BlockBytes];
 		private fixed uint h[HashWords];
 		private fixed uint t[2];
 		private fixed uint f[2];
-#if USE_INTRINSICS
-		private fixed uint viv[HashWords];
-		private fixed byte vrm[32];
-#endif
 		private uint c;
 		private uint outlen;
+
+		unsafe static Blake2sContext()
+		{
+			iv = new[] {
+				0x6A09E667u, 0xBB67AE85u,
+				0x3C6EF372u, 0xA54FF53Au,
+				0x510E527Fu, 0x9B05688Cu,
+				0x1F83D9ABu, 0x5BE0CD19u
+			};
+
+#if USE_INTRINSICS
+			fixed (uint* p = &iv[0])
+			{
+				v128iv0 = Sse2.LoadVector128(p);
+				v128iv1 = Sse2.LoadVector128(p + 4);
+			}
+
+			sbyte* rormask = stackalloc sbyte[] {
+				2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
+				1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
+			};
+
+			v128rm0 = Sse2.LoadVector128(rormask);
+			v128rm1 = Sse2.LoadVector128(rormask + 16);
+#endif
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
@@ -83,11 +108,6 @@ namespace SauceControl.Blake2Fast
 			outlen = (uint)digestLength;
 			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref h[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
 			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
-
-#if USE_INTRINSICS
-			Unsafe.CopyBlock(ref Unsafe.As<uint, byte>(ref viv[0]), ref Unsafe.As<uint, byte>(ref iv[0]), HashBytes);
-			Unsafe.CopyBlock(ref vrm[0], ref rormask[0], 32);
-#endif
 
 			if (keylen > 0)
 			{

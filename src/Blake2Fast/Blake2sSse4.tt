@@ -17,11 +17,6 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2sContext
 	{
-		private static readonly byte[] rormask = new byte[] {
-			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12, //r8
-			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13 //r16
-		};
-
 #if !OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif
@@ -30,19 +25,18 @@ namespace SauceControl.Blake2Fast
 			var row1 = Sse2.LoadVector128(s->h);
 			var row2 = Sse2.LoadVector128(s->h + 4);
 
-			var row3 = Sse2.LoadVector128(s->viv);
-			var row4 = Sse2.LoadVector128(s->viv + 4);
+			var row3 = v128iv0;
+			var row4 = v128iv1;
 
 			row4 = Sse2.Xor(row4, Sse2.LoadVector128(s->t)); // reads into f[] as well
-
-			var r8 = Sse2.LoadVector128((sbyte*)s->vrm);
-			var r16 = Sse2.LoadVector128((sbyte*)s->vrm + 16);
 
 			var m0 = Sse2.LoadVector128(m);
 			var m1 = Sse2.LoadVector128(m + 4);
 			var m2 = Sse2.LoadVector128(m + 8);
 			var m3 = Sse2.LoadVector128(m + 12);
 
+			var r16 = v128rm0;
+			var r8  = v128rm1;
 <#
 for (int i = 0; i < 10; i++) {
 	WriteLine($"\t\t\t//ROUND {i+1}");

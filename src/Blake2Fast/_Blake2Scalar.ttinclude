@@ -24,9 +24,8 @@ for (int i = 0; i < 16; i++) {
 			<#= alg.wtype #> m<#=i.ToString("d2")#> = m[<#=i.ToString("d2")#>];
 <#
 }
-#>
 
-<#
+WriteLine(null);
 mixvars (alg, new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
 mixvars (alg, new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
 #>

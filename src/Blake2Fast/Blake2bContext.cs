@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -18,23 +19,66 @@ namespace SauceControl.Blake2Fast
 		public const int HashBytes = HashWords * WordSize;
 		public const int MaxKeyBytes = HashBytes;
 
-		private static readonly ulong[] iv = new[] {
-			0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
-			0x3C6EF372FE94F82Bul, 0xA54FF53A5F1D36F1ul,
-			0x510E527FADE682D1ul, 0x9B05688C2B3E6C1Ful,
-			0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
-		};
+		private static readonly ulong[] iv;
+
+#if USE_INTRINSICS
+		private static readonly Vector128<ulong> v128iv0;
+		private static readonly Vector128<ulong> v128iv1;
+		private static readonly Vector128<ulong> v128iv2;
+		private static readonly Vector128<ulong> v128iv3;
+		private static readonly Vector128<sbyte> v128rm0;
+		private static readonly Vector128<sbyte> v128rm1;
+
+#if USE_AVX2
+		private static readonly Vector256<ulong> v256iv0;
+		private static readonly Vector256<ulong> v256iv1;
+		private static readonly Vector256<sbyte> v256rm0;
+		private static readonly Vector256<sbyte> v256rm1;
+#endif
+#endif
 
 		private fixed byte b[BlockBytes];
 		private fixed ulong h[HashWords];
 		private fixed ulong t[2];
 		private fixed ulong f[2];
-#if USE_INTRINSICS
-		private fixed ulong viv[HashWords];
-		private fixed byte vrm[32];
-#endif
 		private uint c;
 		private uint outlen;
+
+		unsafe static Blake2bContext()
+		{
+			iv = new[] {
+				0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
+				0x3C6EF372FE94F82Bul, 0xA54FF53A5F1D36F1ul,
+				0x510E527FADE682D1ul, 0x9B05688C2B3E6C1Ful,
+				0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
+			};
+
+#if USE_INTRINSICS
+			fixed (ulong* p = &iv[0])
+			{
+				v128iv0 = Sse2.LoadVector128(p);
+				v128iv1 = Sse2.LoadVector128(p + 2);
+				v128iv2 = Sse2.LoadVector128(p + 4);
+				v128iv3 = Sse2.LoadVector128(p + 6);
+			}
+
+			sbyte* rormask = stackalloc sbyte[] {
+				3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
+				2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
+			};
+
+			v128rm0 = Sse2.LoadVector128(rormask);
+			v128rm1 = Sse2.LoadVector128(rormask + 16);
+
+#if USE_AVX2
+			v256iv0 = Vector256.Create(v128iv0, v128iv1);
+			v256iv1 = Vector256.Create(v128iv2, v128iv3);
+
+			v256rm0 = Vector256.Create(v128rm0, v128rm0);
+			v256rm1 = Vector256.Create(v128rm1, v128rm1);
+#endif
+#endif
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
@@ -59,6 +103,11 @@ namespace SauceControl.Blake2Fast
 #endif
 
 #if USE_INTRINSICS
+#if USE_AVX2
+			if (Avx2.IsSupported)
+				mixAvx2(s, m);
+			else
+#endif
 			if (Sse41.IsSupported)
 				mixSse41(s, m);
 			else
@@ -83,11 +132,6 @@ namespace SauceControl.Blake2Fast
 			outlen = (uint)digestLength;
 			Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
 			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
-
-#if USE_INTRINSICS
-			Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref viv[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
-			Unsafe.CopyBlock(ref vrm[0], ref rormask[0], 32);
-#endif
 
 			if (keylen > 0)
 			{
