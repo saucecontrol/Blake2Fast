@@ -1,13 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-public enum MixMode
-{
-	Noop,
-	Inlined,
-	Preferred
-}
-
 unsafe internal partial struct Blake2bContext
 {
 	public const int WordSize = sizeof(ulong);
@@ -24,8 +17,6 @@ unsafe internal partial struct Blake2bContext
 		0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
 	};
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static ulong ror64(ulong x, byte y) => (x >> y) ^ (x << (64 - y));
 
 	private fixed byte b[BlockBytes];
 	private fixed ulong h[HashWords];
@@ -33,7 +24,6 @@ unsafe internal partial struct Blake2bContext
 	private fixed ulong f[2];
 	private uint c;
 	private uint outlen;
-	internal MixMode mode;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void addLength(uint len)
@@ -43,22 +33,10 @@ unsafe internal partial struct Blake2bContext
 			t[1]++;
 	}
 
-	private void compress(byte* data)
+	private void compress(Blake2bContext* s, byte* data)
 	{
 		ulong* m = (ulong*)data;
-
-		switch (mode)
-		{
-			case MixMode.Noop:
-				mixNoop(m);
-				break;
-			case MixMode.Inlined:
-				mixManualInline(m);
-				break;
-			case MixMode.Preferred:
-				mixPreferred(m);
-				break;
-		}
+		mixSimplified(s, m);
 	}
 
 	public void Init(int outlen = HashBytes, byte[] key = null)
@@ -99,7 +77,7 @@ unsafe internal partial struct Blake2bContext
 
 			addLength(BlockBytes);
 			fixed (Blake2bContext* s = &this)
-				compress(s->b);
+				compress(s, s->b);
 
 			clen += blockrem;
 			inlen -= blockrem;
@@ -108,11 +86,12 @@ unsafe internal partial struct Blake2bContext
 
 		if (inlen + clen > BlockBytes)
 		{
+			fixed (byte* pdata = &data[0])
+			fixed (Blake2bContext* s = &this)
 			while (inlen > BlockBytes)
 			{
 				addLength(BlockBytes);
-				fixed (byte* pdata = &data[0])
-					compress(pdata + clen);
+				compress(s, pdata + clen);
 
 				clen += BlockBytes;
 				inlen -= BlockBytes;
@@ -138,7 +117,7 @@ unsafe internal partial struct Blake2bContext
 		addLength(c);
 		f[0] = unchecked((ulong)~0);
 		fixed (Blake2bContext* s = &this)
-			compress(s->b);
+			compress(s, s->b);
 
 		var hash = new byte[outlen];
 		Unsafe.CopyBlock(ref hash[0], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
@@ -150,10 +129,9 @@ unsafe internal partial struct Blake2bContext
 
 public static class Blake2b
 {
-	unsafe public static byte[] ComputeHash(int outlen, byte[] key, byte[] data, MixMode mode)
+	unsafe public static byte[] ComputeHash(int outlen, byte[] key, byte[] data)
 	{
 		var ctx = default(Blake2bContext);
-		ctx.mode = mode;
 		ctx.Init(outlen, key);
 		ctx.Update(data);
 		return ctx.Finish();

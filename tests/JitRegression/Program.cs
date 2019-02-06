@@ -34,21 +34,9 @@ class Program
 public class Blake2Bench
 {
 
-	[Benchmark(Description = "MixNoop")]
-	public static byte[] Blake2bNoop()
+	[Benchmark(Description = "SimplifiedHash")]
+	public static byte[] Blake2bSimplified()
 	{
-		return Blake2b.ComputeHash(BenchData.HashBytes, BenchData.Key, BenchData.Data, MixMode.Noop);
-	}
-
-	[Benchmark(Description = "MixManualInline")]
-	public static byte[] Blake2bManualInline()
-	{
-		return Blake2b.ComputeHash(BenchData.HashBytes, BenchData.Key, BenchData.Data, MixMode.Inlined);
-	}
-
-	[Benchmark(Description = "MixPreferred")]
-	public static byte[] Blake2bPreferred()
-	{
-		return Blake2b.ComputeHash(BenchData.HashBytes, BenchData.Key, BenchData.Data, MixMode.Preferred);
+		return Blake2b.ComputeHash(BenchData.HashBytes, BenchData.Key, BenchData.Data);
 	}
 }
