@@ -7,15 +7,10 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
-using System.Runtime.CompilerServices;
-
 namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2<#= alg.suffix #>Context
 	{
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static <#= alg.wtype #> ror(<#= alg.wtype #> x, byte y) => (x >> y) ^ (x << (<#= alg.bits #> - y));
-
 		unsafe private static void mixScalar(Blake2<#= alg.suffix #>Context* s, <#= alg.wtype #>* m)
 		{
 <#
@@ -82,6 +77,8 @@ byte[][] sigma = new byte[][] {
 	new byte[] { 10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0 }
 };
 
+string ror(b2alg alg, string x, int y) => $"({x} >> {y,2}) ^ ({x} << {(alg.bits - y),2})";
+
 void mixvars(b2alg alg, int[] pos)
 {
 	foreach (int j in pos) {
@@ -103,10 +100,10 @@ void mix(b2alg alg, int a, int b, int c, int d, int s, int p)
 			v<#=sa#> += m<#=ss#>;
 			v<#=sa#> += v<#=sb#>;
 			v<#=sd#> ^= v<#=sa#>;
-			v<#=sd#> = ror(v<#=sd#>, <#= p == 1 ? (alg.bits / 2) : (alg.bits / 4) #>);
+			v<#=sd#> = <#=ror(alg, string.Concat("v", sd), p == 1 ? (alg.bits / 2) : (alg.bits / 4))#>;
 			v<#=sc#> += v<#=sd#>;
 			v<#=sb#> ^= v<#=sc#>;
-			v<#=sb#> = ror(v<#=sb#>, <#= p == 1 ? (alg.bits / 8 * 3) : (alg.bits == 64 ? 63 : 7) #>);
+			v<#=sb#> = <#=ror(alg, string.Concat("v", sb), p == 1 ? (alg.bits / 8 * 3) : (alg.bits == 64 ? 63 : 7))#>;
 
 <#+
 }
