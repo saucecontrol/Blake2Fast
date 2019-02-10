@@ -17,7 +17,6 @@ unsafe internal partial struct Blake2bContext
 		0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
 	};
 
-
 	private fixed byte b[BlockBytes];
 	private fixed ulong h[HashWords];
 	private fixed ulong t[2];

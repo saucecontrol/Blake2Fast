@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace SauceControl.Blake2Fast
 {
-	unsafe partial struct Blake2bContext
+	unsafe internal partial struct Blake2bContext
 	{
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		unsafe private static void mixAvx2(Blake2bContext* s, ulong* m)

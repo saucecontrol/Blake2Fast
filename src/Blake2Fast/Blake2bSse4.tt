@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 
 namespace SauceControl.Blake2Fast
 {
-	unsafe partial struct Blake2bContext
+	unsafe internal partial struct Blake2bContext
 	{
 #if !OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]

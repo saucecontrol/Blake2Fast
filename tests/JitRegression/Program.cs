@@ -33,7 +33,6 @@ class Program
 
 public class Blake2Bench
 {
-
 	[Benchmark(Description = "SimplifiedHash")]
 	public static byte[] Blake2bSimplified()
 	{

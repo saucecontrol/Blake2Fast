@@ -7,18 +7,18 @@
     <TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionPrefix>0.3.0</VersionPrefix>
     <Authors>Clinton Ingram</Authors>
     <Product>Blake2Fast</Product>
-    <Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms.  Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1</Description>
-    <Copyright>Copyright © 2018 Clinton Ingram</Copyright>
+    <Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms.  Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3.0</Description>
+    <Copyright>Copyright © 2018-2019 Clinton Ingram</Copyright>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
     <PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/saucecontrol/Blake2Fast</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/blob/master/license</PackageLicenseUrl>
     <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
-    <PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE SIMD HashAlgorithm HMAC</PackageTags>
+    <PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC</PackageTags>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <AssemblyOriginatorKeyFile>SauceControl.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
@@ -39,7 +39,7 @@
     <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(DefineConstants.Contains('OLD_INTRINSICS'))">
+  <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS')) And $(DefineConstants.Contains('OLD_INTRINSICS'))">
     <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
   </ItemGroup>
 
