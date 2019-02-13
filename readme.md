@@ -48,7 +48,7 @@ Jit=RyuJit  Toolchain=Default
 
 Duplicate results have been removed from the above tables for the sake of brevity.
 
-Note that the built-in cryptographic hash algorithms in .NET forward to platform-native libraries for their implementations.  On Windows, this means the implementations are prodided by [Windows CNG](https://docs.microsoft.com/en-us/windows/desktop/seccng/cng-portal).  Their performance is therefore identical across all .NET Core versions.
+Note that the built-in cryptographic hash algorithms in .NET forward to platform-native libraries for their implementations.  On Windows, this means the implementations are provided by [Windows CNG](https://docs.microsoft.com/en-us/windows/desktop/seccng/cng-portal).  Their performance is therefore identical across all .NET Core versions.
 
 On .NET Framework and .NET Core 1.1, only scalar implementations are available for both BLAKE2 algorithms.  The scalar implementations outperform the built-in .NET algorithms on x64 platforms, but they are significantly slower on x86.
 
