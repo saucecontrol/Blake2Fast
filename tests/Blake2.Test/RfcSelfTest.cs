@@ -78,11 +78,7 @@ public class RfcSelfTest
 
 	private static bool blake2bNoAllocSelfTest()
 	{
-#if FAST_SPAN
 		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
-#else
-		var buff = new byte[Blake2b.DefaultDigestLength];
-#endif
 		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
@@ -103,11 +99,7 @@ public class RfcSelfTest
 
 	private static bool blake2sNoAllocSelfTest()
 	{
-#if FAST_SPAN
 		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
-#else
-		var buff = new byte[Blake2b.DefaultDigestLength];
-#endif
 		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
