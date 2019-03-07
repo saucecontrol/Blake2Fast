@@ -1,146 +1,155 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <RootNamespace>SauceControl.Blake2Fast</RootNamespace>
-    <AssemblyName>SauceControl.Blake2Fast</AssemblyName>
-    <AssemblyTitle>Blake2Fast</AssemblyTitle>
-    <TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
-    <VersionPrefix>0.3.0</VersionPrefix>
-    <Authors>Clinton Ingram</Authors>
-    <Product>Blake2Fast</Product>
-    <Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms.  Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3.0</Description>
-    <Copyright>Copyright © 2018-2019 Clinton Ingram</Copyright>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
-    <PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/saucecontrol/Blake2Fast</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/saucecontrol/Blake2Fast/blob/master/license</PackageLicenseUrl>
-    <PackageReleaseNotes>See https://github.com/saucecontrol/Blake2Fast/releases</PackageReleaseNotes>
-    <PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC</PackageTags>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyOriginatorKeyFile>SauceControl.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-    <DelaySign>false</DelaySign>
-  </PropertyGroup>
+	<PropertyGroup>
+		<VersionPrefix>0.3.0</VersionPrefix>
+		<TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
 
-  <PropertyGroup>
-    <DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);USE_CRYPTOGRAPHY</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);OLD_INTRINSICS</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);USE_AVX2</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
-  </PropertyGroup>
+		<RootNamespace>SauceControl.$(MSBuildProjectName)</RootNamespace>
+		<AssemblyName>SauceControl.$(MSBuildProjectName)</AssemblyName>
+		<AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
+		<Product>$(MSBuildProjectName)</Product>
+		<Authors>Clinton Ingram</Authors>
+		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
+		<PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
+		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DebugType>pdbonly</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
-  </PropertyGroup>
+		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
+		<Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms. Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3.0</Description>
+		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC</PackageTags>
+	</PropertyGroup>
 
-  <ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS')) And $(DefineConstants.Contains('OLD_INTRINSICS'))">
-    <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
-  </ItemGroup>
+	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
+		<Features>strict</Features>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>SauceControl.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
 
-  <ItemGroup Condition="!$(DefineConstants.Contains('FAST_SPAN'))">
-    <PackageReference Include="System.Memory" Version="4.5.0" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
-    <!--PackageReference Include="GitLink" Version="3.1.0" PrivateAssets="all" /-->
-  </ItemGroup>
+	<PropertyGroup>
+		<DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);USE_CRYPTOGRAPHY</DefineConstants>
+		<DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);OLD_INTRINSICS</DefineConstants>
+		<DefineConstants Condition="'$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);USE_AVX2</DefineConstants>
+		<DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1' Or '$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);FAST_SPAN;USE_INTRINSICS</DefineConstants>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
+	<ItemGroup Condition="$(DefineConstants.Contains('USE_INTRINSICS')) And $(DefineConstants.Contains('OLD_INTRINSICS'))">
+		<PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="4.5.0-rc1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Blake2b.cs">
-      <DependentUpon>Blake2b.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2bContext.cs">
-      <DependentUpon>Blake2bContext.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2bScalar.cs">
-      <DependentUpon>Blake2bScalar.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2bSse4.cs">
-      <DependentUpon>Blake2bSse4.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2bAvx2.cs">
-      <DependentUpon>Blake2bAvx2.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2s.cs">
-      <DependentUpon>Blake2s.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2sContext.cs">
-      <DependentUpon>Blake2sContext.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2sScalar.cs">
-      <DependentUpon>Blake2sScalar.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Blake2sSse4.cs">
-      <DependentUpon>Blake2sSse4.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup Condition="!$(DefineConstants.Contains('FAST_SPAN'))">
+		<PackageReference Include="System.Memory" Version="4.5.2" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="Blake2b.tt">
-      <LastGenOutput>Blake2b.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2bContext.tt">
-      <LastGenOutput>Blake2bContext.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2bScalar.tt">
-      <LastGenOutput>Blake2bScalar.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2bSse4.tt">
-      <LastGenOutput>Blake2bSse4.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2bAvx2.tt">
-      <LastGenOutput>Blake2bAvx2.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2s.tt">
-      <LastGenOutput>Blake2s.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2sContext.tt">
-      <LastGenOutput>Blake2sContext.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2sScalar.tt">
-      <LastGenOutput>Blake2sScalar.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Blake2sSse4.tt">
-      <LastGenOutput>Blake2sSse4.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)'=='Release'">
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05" PrivateAssets="all"/>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Blake2b.cs">
+			<DependentUpon>Blake2b.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2bContext.cs">
+			<DependentUpon>Blake2bContext.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2bScalar.cs">
+			<DependentUpon>Blake2bScalar.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2bSse4.cs">
+			<DependentUpon>Blake2bSse4.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2bAvx2.cs">
+			<DependentUpon>Blake2bAvx2.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2s.cs">
+			<DependentUpon>Blake2s.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2sContext.cs">
+			<DependentUpon>Blake2sContext.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2sScalar.cs">
+			<DependentUpon>Blake2sScalar.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="Blake2sSse4.cs">
+			<DependentUpon>Blake2sSse4.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Blake2b.tt">
+			<LastGenOutput>Blake2b.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2bContext.tt">
+			<LastGenOutput>Blake2bContext.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2bScalar.tt">
+			<LastGenOutput>Blake2bScalar.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2bSse4.tt">
+			<LastGenOutput>Blake2bSse4.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2bAvx2.tt">
+			<LastGenOutput>Blake2bAvx2.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2s.tt">
+			<LastGenOutput>Blake2s.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2sContext.tt">
+			<LastGenOutput>Blake2sContext.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2sScalar.tt">
+			<LastGenOutput>Blake2sScalar.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Blake2sSse4.tt">
+			<LastGenOutput>Blake2sSse4.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+	</ItemGroup>
 
 </Project>
