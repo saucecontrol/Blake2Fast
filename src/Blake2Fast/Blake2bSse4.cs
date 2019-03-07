@@ -6,6 +6,7 @@
 //------------------------------------------------------------------------------
 
 #if USE_INTRINSICS
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +14,7 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2bContext
 	{
+		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 #if !OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif

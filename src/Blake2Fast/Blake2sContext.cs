@@ -167,7 +167,7 @@ namespace SauceControl.Blake2Fast
 				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 			addLength(c);
-			f[0] = unchecked((uint)~0);
+			f[0] = ~0u;
 			fixed (Blake2sContext* s = &this)
 				compress(s, s->b);
 

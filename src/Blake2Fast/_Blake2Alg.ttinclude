@@ -5,6 +5,7 @@
 		public int rounds;
 		public string suffix;
 		public string wtype;
+		public string wsuff;
 		public string ivfmt;
 		public ulong[] iv;
 	}
@@ -14,6 +15,7 @@
 		rounds = 12,
 		suffix = "b",
 		wtype = "ulong",
+		wsuff = "ul",
 		ivfmt = "0x{0:X16}ul",
 		iv = new[] {
 			0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
@@ -28,6 +30,7 @@
 		rounds = 10,
 		suffix = "s",
 		wtype = "uint",
+		wsuff = "u",
 		ivfmt = "0x{0:X8}u",
 		iv = new[] {
 			0x6A09E667ul, 0xBB67AE85ul,

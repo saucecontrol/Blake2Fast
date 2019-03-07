@@ -6,6 +6,7 @@
 //------------------------------------------------------------------------------
 
 #if USE_INTRINSICS && USE_AVX2
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +14,7 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2bContext
 	{
+		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		unsafe private static void mixAvx2(Blake2bContext* s, ulong* m)
 		{

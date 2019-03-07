@@ -255,7 +255,7 @@ if (alg.bits == 64) {
 				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 			addLength(c);
-			f[0] = unchecked((<#= alg.wtype #>)~0);
+			f[0] = ~0<#= alg.wsuff #>;
 			fixed (Blake2<#= alg.suffix #>Context* s = &this)
 				compress(s, s->b);
 
