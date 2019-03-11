@@ -37,6 +37,7 @@ public class MultipleJitConfig : ManualConfig
 		Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
 		Add(DefaultConfig.Instance.GetExporters().ToArray());
 		Set(ByMethodByPlatformOrderProvider.Instance);
+		ArtifactsPath = @"..\..\out\bdn\JitRegression";
 	}
 }
 

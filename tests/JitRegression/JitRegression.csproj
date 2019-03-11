@@ -4,15 +4,18 @@
 		<OutputType>Exe</OutputType>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<TargetFrameworks>netcoreapp3.0;netcoreapp2.1;netcoreapp2.0;netcoreapp1.1</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<DebugType>pdbonly</DebugType>
 		<DebugSymbols>true</DebugSymbols>
-		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="BenchmarkDotNet" Version="0.10.14" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
 	</ItemGroup>
 
 </Project>

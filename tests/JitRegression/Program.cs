@@ -27,6 +27,7 @@ class Program
 {
 	static void Main(string[] args)
 	{
+		Console.WriteLine(Blake2Bench.Blake2bSimplified());
 		BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig());
 	}
 }

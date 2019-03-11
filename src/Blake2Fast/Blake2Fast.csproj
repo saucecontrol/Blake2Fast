@@ -3,39 +3,6 @@
 	<PropertyGroup>
 		<VersionPrefix>0.3.0</VersionPrefix>
 		<TargetFrameworks>netstandard1.1;netstandard1.3;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
-
-		<RootNamespace>SauceControl.$(MSBuildProjectName)</RootNamespace>
-		<AssemblyName>SauceControl.$(MSBuildProjectName)</AssemblyName>
-		<AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
-		<Product>$(MSBuildProjectName)</Product>
-		<Authors>Clinton Ingram</Authors>
-		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
-		<RepositoryType>git</RepositoryType>
-		<RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
-		<PackageIconUrl>https://photosauce.net/icon64x64.png</PackageIconUrl>
-		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-
-		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
-		<Description>Optimized implementations of the BLAKE2b and BLAKE2s hashing algorithms. Uses SSE2-SSE4.1 Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3.0</Description>
-		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC</PackageTags>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<LangVersion>latest</LangVersion>
-		<Features>strict</Features>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SignAssembly>true</SignAssembly>
-		<AssemblyOriginatorKeyFile>SauceControl.snk</AssemblyOriginatorKeyFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<DebugType>portable</DebugType>
-		<DebugSymbols>true</DebugSymbols>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<DocumentationFile>bin\$(Configuration)\$(TargetFrameWork)\$(AssemblyName).xml</DocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -55,10 +22,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)'=='Release'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05" PrivateAssets="all"/>
 	</ItemGroup>
 
 	<ItemGroup>
