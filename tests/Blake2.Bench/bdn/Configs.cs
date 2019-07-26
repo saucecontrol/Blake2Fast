@@ -3,62 +3,58 @@
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Validators;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Toolchains.CsProj;
 using BenchmarkDotNet.Toolchains.DotNetCli;
-using BenchmarkDotNet.Validators;
 
 public class MultipleJitConfig : ManualConfig
 {
 	public MultipleJitConfig()
 	{
-		var netCoreApp30 = new NetCoreAppSettings("netcoreapp3.0", null, ".NET Core 3.0");
-
-		var cli30_32 = netCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
-		var cli30_64 = netCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
+		var cli30_32 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
+		var cli30_64 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
 		var cli21_32 = NetCoreAppSettings.NetCoreApp21.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
 		var cli21_64 = NetCoreAppSettings.NetCoreApp21.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
-		var cli20_32 = NetCoreAppSettings.NetCoreApp20.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
-		var cli20_64 = NetCoreAppSettings.NetCoreApp20.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
-		var cli11_32 = NetCoreAppSettings.NetCoreApp11.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
-		var cli11_64 = NetCoreAppSettings.NetCoreApp11.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
 
-		Add(Job.RyuJitX64.With(CsProjCoreToolchain.From(cli30_64)).WithId("netcoreapp3.0"));
-		Add(Job.RyuJitX86.With(CsProjCoreToolchain.From(cli30_32)).WithId("netcoreapp3.0"));
-		Add(Job.RyuJitX64.With(CsProjCoreToolchain.From(cli21_64)).WithId("netcoreapp2.1"));
-		Add(Job.RyuJitX86.With(CsProjCoreToolchain.From(cli21_32)).WithId("netcoreapp2.1"));
-		//Add(Job.RyuJitX64.With(CsProjCoreToolchain.From(cli20_64)).WithId("netcoreapp2.0"));
-		//Add(Job.RyuJitX86.With(CsProjCoreToolchain.From(cli20_32)).WithId("netcoreapp2.0"));
-		//Add(Job.RyuJitX64.With(CsProjCoreToolchain.From(cli11_64)).AsBaseline().WithId("netcoreapp1.1"));
-		//Add(Job.RyuJitX86.With(CsProjCoreToolchain.From(cli11_32)).AsBaseline().WithId("netcoreapp1.1"));
+		Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X64).With(CsProjCoreToolchain.From(cli30_64)).WithId("netcoreapp3.0"));
+		Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X86).With(CsProjCoreToolchain.From(cli30_32)).WithId("netcoreapp3.0"));
+		Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X64).With(CsProjCoreToolchain.From(cli21_64)).WithId("netcoreapp2.1"));
+		Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X86).With(CsProjCoreToolchain.From(cli21_32)).WithId("netcoreapp2.1"));
 
-#if NETFRAMEWORK // Legacy JIT can only be used from a CLR host
-		Add(Job.LegacyJitX64.With(Runtime.Clr).WithId("net46"));
-		Add(Job.LegacyJitX86.With(Runtime.Clr).WithId("net46"));
-		Add(Job.RyuJitX64.With(Runtime.Clr).WithId("net46"));
-#else
-//		Add(Job.RyuJitX64.With(Runtime.Clr).WithId("net46"));
-//		Add(Job.RyuJitX86.With(Runtime.Clr).WithId("net46")); //.NET Framework doesn't yet include RyuJIT-32, so this runs LegacyJIT
-#endif
+		Add(Job.ShortRun.With(Runtime.Clr).With(Jit.RyuJit).With(Platform.X64).WithId("net472").AsBaseline());
+		Add(Job.ShortRun.With(Runtime.Clr).With(Jit.LegacyJit).With(Platform.X86).WithId("net472").AsBaseline());
 
 		Add(DefaultConfig.Instance.GetLoggers().ToArray());
-		Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
+		Add(DefaultConfig.Instance.GetColumnProviders().Where(cp => cp.GetType().Name != "ParamsColumnProvider").ToArray());
 		Add(DefaultConfig.Instance.GetExporters().ToArray());
 		Add(MemoryDiagnoser.Default);
-		Set(ByMethodByPlatformOrderProvider.Instance);
+		Add(new DataLengthColumn());
+		Orderer = ByPlatformByDataLengthOrderer.Instance;
+		ArtifactsPath = @"..\..\out\bdn\Blake2.Bench";
 	}
 }
 
 public class AllowNonOptimizedConfig : ManualConfig
 {
-	public AllowNonOptimizedConfig()
+	public AllowNonOptimizedConfig(bool includeHash = true)
 	{
-		Add(JitOptimizationsValidator.DontFailOnError);
+		var cli30_32 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
+		var cli30_64 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
+
+		//Add(Job.Job.ShortRun.With(Jit.RyuJit).With(Platform.X64).With(CsProjCoreToolchain.From(cli30_64)).WithId("netcoreapp3.0"));
+		//Add(Job.Job.ShortRun.With(Jit.RyuJit).With(Platform.X86).With(CsProjCoreToolchain.From(cli30_32)).WithId("netcoreapp3.0"));
+		Add(Job.ShortRun);
+
+		Add(JitOptimizationsValidator.DontFailOnError); // needed for Blake2Core, which is not optimized in nuget package
 
 		Add(DefaultConfig.Instance.GetLoggers().ToArray());
-		Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
+		Add(DefaultConfig.Instance.GetColumnProviders().Where(cp => cp.GetType().Name != "ParamsColumnProvider").ToArray());
 		Add(DefaultConfig.Instance.GetExporters().ToArray());
 		Add(MemoryDiagnoser.Default);
-		Add(new HashColumn());
+		if (includeHash) Add(new HashColumn());
+		Add(new DataLengthColumn());
+		Orderer = ByPlatformByDataLengthOrderer.Instance;
+		ArtifactsPath = @"..\..\out\bdn\Blake2.Bench";
 	}
 }

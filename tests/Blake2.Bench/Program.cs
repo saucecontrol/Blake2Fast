@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Runtime.InteropServices;
 
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Configs;
@@ -13,21 +13,20 @@ static class Paths
 {
 	public const string DotNetCLIx64 = @"c:\program files\dotnet\dotnet.exe";
 	public const string DotNetCLIx86 = @"c:\program files (x86)\dotnet\dotnet.exe";
-	public const string BlakeNativeDLLx64 = @"c:\gitlocal\blake2fast\tests\blake2.bench\nativebin\x64";
-	public const string BlakeNativeDLLx86 = @"c:\gitlocal\blake2fast\tests\blake2.bench\nativebin\x86";
 }
 
 static class BenchConfig
 {
 	public const int HashBytes = 5;
-
 	public static readonly byte[] Key = Array.Empty<byte>();
-	//public static readonly byte[] Key = System.Text.Encoding.ASCII.GetBytes("abc");
+	//public static readonly byte[] Key = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
 
-	//public static readonly byte[] Data = Array.Empty<byte>();
-	//public static readonly byte[] Data = System.Text.Encoding.ASCII.GetBytes("abc");
-	//public static readonly byte[] Data = System.IO.File.ReadAllBytes(@"c:\windows\system32\spool\drivers\color\srgb.icm");
-	public static readonly byte[] Data = new byte[1024 * 1024 * 10].RandomFill();
+	public static readonly List<byte[]> Data = new List<byte[]>
+	{
+		new byte[] { (byte)'a', (byte)'b', (byte)'c' },
+		new byte[3268].RandomFill(), // size of Windows 10 srgb.icm
+		new byte[1024 * 1024 * 3].RandomFill()
+	};
 
 	public static string ToHexString(this byte[] a) => string.Concat(a.Select(x => x.ToString("X2")));
 
@@ -40,231 +39,249 @@ static class BenchConfig
 
 class Program
 {
-	static void Main(string[] args)
+	public static void Main()
 	{
-		//Console.WriteLine(Blake2Rfc.SelftTest.blake2b_selftest());
-		//Console.WriteLine(Blake2Rfc.SelftTest.blake2s_selftest());
-		//singleRuns();
+		if (!Blake2Rfc.SelftTest.blake2b_selftest() || !Blake2Rfc.SelftTest.blake2s_selftest())
+		{
+			Console.WriteLine("Error: RFC self-test failed");
+			return;
+		}
 
-		BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().With(new CategoryFilter("JitTest")));
-		//BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new CategoryFilter("OtherHash")));
-		//BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new CategoryFilter("Blake2b")));
-		//BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new CategoryFilter("Blake2s")));
+		Console.WriteLine(@"Choose a benchmark:
+
+0. Just test each BLAKE2 library once, don't benchmark
+1. Blake2Fast vs .NET in-box algorithms (MD5 and SHA2)
+2. Blake2Fast BLAKE2b vs 3rd party libraries
+3. Blake2Fast BLAKE2s vs 3rd party libraries
+4. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
+");
+		switch (Console.ReadKey().Key)
+		{
+			case ConsoleKey.D0:
+				singleRun();
+				break;
+			case ConsoleKey.D1:
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).With(new AllCategoriesFilter(new[] { "OtherHash" })));
+				break;
+			case ConsoleKey.D2:
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new AllCategoriesFilter(new[] { "Blake2b" })));
+				break;
+			case ConsoleKey.D3:
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new AllCategoriesFilter(new[] { "Blake2s" })));
+				break;
+			case ConsoleKey.D4:
+				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().With(new AllCategoriesFilter(new[] { "JitTest" })));
+				break;
+			default:
+				Console.WriteLine("Unrecognized command.");
+				break;
+		}
 	}
 
-	static void singleRuns()
+	private static void singleRun()
 	{
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-		{
-			Console.WriteLine(Blake2Bench.GetHashNativeRef().ToHexString());
-			Console.WriteLine(Blake2Bench.GetHashNativeSSE().ToHexString());
-			//Console.WriteLine(Blake2Bench.GetHashNativeAVX().ToHexString()); //will crash if processor doesn't support AVX2
-		}
-		Console.WriteLine(Blake2Bench.GetHashBlake2bRfc().ToHexString());
+		var bench = new Blake2Bench();
+
+		// BLAKE2B
 		Console.WriteLine();
+		Console.WriteLine(bench.GetHashBlake2bRfc(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2bFast(BenchConfig.Data.Last()).ToHexString());
+
+		Console.WriteLine(bench.GetHashBlake2Sharp(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashByteTerrace2b(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashDHB2(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashICB2(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashKSB2(BenchConfig.Data.Last()).ToHexString());
+
 #if !NETFRAMEWORK
-		Console.WriteLine(Blake2Bench.GetHashBlake2Core().ToHexString());
+		Console.WriteLine(bench.GetHashBlake2Core(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashNSec(BenchConfig.Data.Last()).ToHexString()); // not RFC-compliant -- result will be all 0s when digest size < default
 #endif
-		Console.WriteLine(Blake2Bench.GetHashKSB2().ToHexString());
-#if NETCOREAPP2_1
-		Console.WriteLine(Blake2Bench.GetHashNSec().ToHexString());
-#endif
+
+		// BLAKE2S
 		Console.WriteLine();
+		Console.WriteLine(bench.GetHashBlake2sRfc(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2sFast(BenchConfig.Data.Last()).ToHexString());
 
-		Console.WriteLine(Blake2Bench.GetHashBlake2Sharp().ToHexString());
-		Console.WriteLine(Blake2Bench.GetHashBlake2bFast().ToHexString());
-		Console.WriteLine(Blake2Bench.GetHashDHB2().ToHexString());
-		//Console.WriteLine(Blake2Bench.GetHashICB2().ToHexString()); //disabled due to rogue Console.WriteLine in library
-
-		Console.WriteLine();
-
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-		{
-			Console.WriteLine(Blake2Bench.GetHashsNativeRef().ToHexString());
-			Console.WriteLine(Blake2Bench.GetHashsNativeSSE().ToHexString());
-		}
-		Console.WriteLine(Blake2Bench.GetHashBlake2sRfc().ToHexString());
-		Console.WriteLine();
-
-		Console.WriteLine(Blake2Bench.GetHashBlake2sFast().ToHexString());
-#if !NETCOREAPP1_1
-		Console.WriteLine(Blake2Bench.GetHash2snet().ToHexString());
-#endif
+		Console.WriteLine(bench.GetHash2snet(BenchConfig.Data.Last()).ToHexString());
+		//Console.WriteLine(bench.GetHashByteTerrace2s(BenchConfig.Data.Last()).ToHexString()); // disabled due to crashing bug
 	}
 }
 
 public class Blake2Bench
 {
+	public static IEnumerable<byte[]> Data() => BenchConfig.Data;
+
 	/*
 	 *
 	 * BLAKE2B
 	 *
 	 */
-	//[Benchmark(Description = "Blake2bRefNative"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashNativeRef()
-	{
-		var h = new byte[BenchConfig.HashBytes];
-		Interop.Blake2bNativeRef(h, new IntPtr(h.Length), BenchConfig.Data, new IntPtr(BenchConfig.Data.Length), BenchConfig.Key, new IntPtr(BenchConfig.Key.Length));
-		return h;
-	}
-
-	//[Benchmark(Description = "Blake2bSseNative"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashNativeSSE()
-	{
-		var h = new byte[BenchConfig.HashBytes];
-		Interop.Blake2bNativeSSE41(h, new IntPtr(h.Length), BenchConfig.Data, new IntPtr(BenchConfig.Data.Length), BenchConfig.Key, new IntPtr(BenchConfig.Key.Length));
-		return h;
-	}
-
-	//[Benchmark(Description = "Blake2AvxNative"), BenchmarkCategory("Blake2b")]
-	//public unsafe static byte[] GetHashNativeAVX()
-	//{
-	//	var h = new byte[BenchConfig.HashBytes];
-	//	Interop.Blake2bNativeAVX2(h, new IntPtr(h.Length), BenchConfig.Data, new IntPtr(BenchConfig.Data.Length));
-	//	return h;
-	//}
-
 	//[Benchmark(Description = "Blake2bRFC"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashBlake2bRfc()
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2bRfc(byte[] data)
 	{
-		return Blake2Rfc.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, BenchConfig.Data);
+		return Blake2Rfc.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+	}
+
+	[Benchmark(Description = "*Blake2Fast.Blake2b"), BenchmarkCategory("Blake2b", "JitTest")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2bFast(byte[] data)
+	{
+		return SauceControl.Blake2Fast.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
 	}
 
 	[Benchmark(Description = "Blake2Sharp"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashBlake2Sharp()
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2Sharp(byte[] data)
 	{
 		var cfg = new Blake2Sharp.Blake2BConfig() {
 			OutputSizeInBytes = BenchConfig.HashBytes,
 			Key = BenchConfig.Key
 		};
-		return Blake2Sharp.Blake2B.ComputeHash(BenchConfig.Data, cfg);
+		return Blake2Sharp.Blake2B.ComputeHash(data, cfg);
 	}
 
-	[Benchmark(Description = "Blake2bFast"), BenchmarkCategory("Blake2b", "JitTest", "OtherHash")]
-	public static byte[] GetHashBlake2bFast()
+	[Benchmark(Description = "ByteTerrace"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashByteTerrace2b(byte[] data)
 	{
-		return SauceControl.Blake2Fast.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, BenchConfig.Data);
+		var b2b = ByteTerrace.Maths.Cryptography.Blake2b.New(BenchConfig.Key, BenchConfig.HashBytes);
+		return b2b.ComputeHash(data);
 	}
 
-#if !NETFRAMEWORK
-	//[Benchmark(Description = "Blake2Core"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashBlake2Core()
-	{
-		var cfg = new Blake2Core.Blake2BConfig() {
-			OutputSizeInBytes = BenchConfig.HashBytes,
-			Key = BenchConfig.Key
-		};
-		return Blake2Core.Blake2B.ComputeHash(BenchConfig.Data, cfg);
-	}
-#endif
-
-	//[Benchmark(Description = "S.D.HashFunction"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashDHB2()
+	[Benchmark(Description = "S.D.HashFunction"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashDHB2(byte[] data)
 	{
 		var cfg = new System.Data.HashFunction.Blake2.Blake2BConfig() {
 			HashSizeInBits = BenchConfig.HashBytes * 8,
 			Key = BenchConfig.Key
 		};
 		var b2 = System.Data.HashFunction.Blake2.Blake2BFactory.Instance.Create(cfg);
-		return b2.ComputeHash(BenchConfig.Data).Hash;
+		return b2.ComputeHash(data).Hash;
 	}
 
-	//[Benchmark(Description = "Konscious"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashKSB2()
+	[Benchmark(Description = "Konscious"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashKSB2(byte[] data)
 	{
-		var b2 = new Konscious.Security.Cryptography.HMACBlake2B(BenchConfig.Key, BenchConfig.HashBytes *  8);
-		return b2.ComputeHash(BenchConfig.Data);
+		using (var b2 = new Konscious.Security.Cryptography.HMACBlake2B(BenchConfig.Key, BenchConfig.HashBytes *  8))
+			return b2.ComputeHash(data);
 	}
 
-	//[Benchmark(Description = "Isopoh"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashICB2()
+	[Benchmark(Description = "Isopoh"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashICB2(byte[] data)
 	{
 		var cfg = new Isopoh.Cryptography.Blake2b.Blake2BConfig() {
 			OutputSizeInBytes = BenchConfig.HashBytes,
 			Key = BenchConfig.Key
 		};
-		return Isopoh.Cryptography.Blake2b.Blake2B.ComputeHash(BenchConfig.Data, cfg, null);
+		return Isopoh.Cryptography.Blake2b.Blake2B.ComputeHash(data, cfg, null);
 	}
 
-#if NETCOREAPP2_1
-	//[Benchmark(Description = "NSec"), BenchmarkCategory("Blake2b")]
-	public static byte[] GetHashNSec()
+#if !NETFRAMEWORK
+	[Benchmark(Description = "Blake2Core"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2Core(byte[] data)
 	{
-		// this implementation won't do hashes less than 256 bits, so just return 0's for shorter hashes
+		var cfg = new Blake2Core.Blake2BConfig() {
+			OutputSizeInBytes = BenchConfig.HashBytes,
+			Key = BenchConfig.Key
+		};
+		return Blake2Core.Blake2B.ComputeHash(data, cfg);
+	}
+
+	[Benchmark(Description = "NSec"), BenchmarkCategory("Blake2b")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashNSec(byte[] data)
+	{
+		// this implementation won't do hashes less than 256 bits, so just return 0s for shorter hashes
 		var b2 = new NSec.Cryptography.Blake2b(Math.Max(BenchConfig.HashBytes, 32));
-		var h = b2.Hash(BenchConfig.Data);
+		var h = b2.Hash(data);
 		return BenchConfig.HashBytes >= 32 ? h : new byte[BenchConfig.HashBytes];
 	}
 #endif
 
-/*
- *
- * BLAKE2S
- *
- */
-	//[Benchmark(Description = "Blake2sRefNative"), BenchmarkCategory("Blake2s")]
-	public static byte[] GetHashsNativeRef()
-	{
-		var h = new byte[BenchConfig.HashBytes];
-		Interop.Blake2sNativeRef(h, new IntPtr(h.Length), BenchConfig.Data, new IntPtr(BenchConfig.Data.Length), BenchConfig.Key, new IntPtr(BenchConfig.Key.Length));
-		return h;
-	}
-
-	//[Benchmark(Description = "Blake2sSseNative"), BenchmarkCategory("Blake2s")]
-	public static byte[] GetHashsNativeSSE()
-	{
-		var h = new byte[BenchConfig.HashBytes];
-		Interop.Blake2sNativeSSE41(h, new IntPtr(h.Length), BenchConfig.Data, new IntPtr(BenchConfig.Data.Length), BenchConfig.Key, new IntPtr(BenchConfig.Key.Length));
-		return h;
-	}
-
+	/*
+	 *
+	 * BLAKE2S
+	 *
+	 */
 	//[Benchmark(Description = "Blake2sRFC"), BenchmarkCategory("Blake2s")]
-	public static byte[] GetHashBlake2sRfc()
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2sRfc(byte[] data)
 	{
-		return Blake2Rfc.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, BenchConfig.Data);
+		return Blake2Rfc.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
 	}
 
-#if !NETCOREAPP1_1
+	[Benchmark(Description = "*Blake2Fast.Blake2s"), BenchmarkCategory("Blake2s", "JitTest")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2sFast(byte[] data)
+	{
+		return SauceControl.Blake2Fast.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+	}
+
 	[Benchmark(Description = "Blake2s-net"), BenchmarkCategory("Blake2s")]
-	public static byte[] GetHash2snet()
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHash2snet(byte[] data)
 	{
 		var cfg = new Blake2s.Blake2sConfig() {
 			OutputSizeInBytes = BenchConfig.HashBytes,
 			Key = BenchConfig.Key
 		};
-		return Blake2s.Blake2S.ComputeHash(BenchConfig.Data, cfg);
+		return Blake2s.Blake2S.ComputeHash(data, cfg);
 	}
-#endif
 
-	[Benchmark(Description = "Blake2sFast"), BenchmarkCategory("Blake2s", "JitTest", "OtherHash")]
-	public static byte[] GetHashBlake2sFast()
+	//[Benchmark(Description = "ByteTerrace"), BenchmarkCategory("Blake2s")] // disabled due to crashing bug
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashByteTerrace2s(byte[] data)
 	{
-		return SauceControl.Blake2Fast.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, BenchConfig.Data);
+		var b2s = ByteTerrace.Maths.Cryptography.Blake2s.New(BenchConfig.Key, BenchConfig.HashBytes);
+		return b2s.ComputeHash(data);
 	}
 
-/*
- *
- * OTHERS
- *
- */
+	/*
+	 *
+	 * BLAKE2 vs OTHERS
+	 *
+	 */
+	[Benchmark(Description = "BLAKE2-256"), BenchmarkCategory("OtherHash")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2s256(byte[] data)
+	{
+		return SauceControl.Blake2Fast.Blake2s.ComputeHash(data);
+	}
+
+	[Benchmark(Description = "BLAKE2-512"), BenchmarkCategory("OtherHash")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake2b256(byte[] data)
+	{
+		return SauceControl.Blake2Fast.Blake2b.ComputeHash(data);
+	}
+
 	[Benchmark(Description = "MD5"), BenchmarkCategory("OtherHash")]
-	public static byte[] GetHashMD5()
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashMD5(byte[] data)
 	{
 		using (var md5 = MD5.Create())
-			return md5.ComputeHash(BenchConfig.Data);
+			return md5.ComputeHash(data);
 	}
 
-	[Benchmark(Description = "SHA256"), BenchmarkCategory("OtherHash")]
-	public static byte[] GetHashSha256()
+	[Benchmark(Description = "SHA-256"), BenchmarkCategory("OtherHash")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashSha256(byte[] data)
 	{
 		using (var sha = SHA256.Create())
-			return sha.ComputeHash(BenchConfig.Data);
+			return sha.ComputeHash(data);
 	}
 
-	[Benchmark(Description = "SHA512"), BenchmarkCategory("OtherHash")]
-	public static byte[] GetHashSha512()
+	[Benchmark(Description = "SHA-512"), BenchmarkCategory("OtherHash")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashSha512(byte[] data)
 	{
 		using (var sha = SHA512.Create())
-			return sha.ComputeHash(BenchConfig.Data);
+			return sha.ComputeHash(data);
 	}
 }

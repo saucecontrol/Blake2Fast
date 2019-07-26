@@ -1,9 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Columns;
-using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 
@@ -20,13 +21,15 @@ class HashColumn : IColumn
 	public bool AlwaysShow => true;
 	public bool IsNumeric => false;
 
-	public bool IsDefault(Summary summary, Benchmark benchmark) => false;
+	public bool IsDefault(Summary summary, BenchmarkCase benchmark) => false;
 	public bool IsAvailable(Summary summary) => true;
 
-	public string GetValue(Summary summary, Benchmark benchmark) => GetValue(summary, benchmark, null);
-	public string GetValue(Summary summary, Benchmark benchmark, ISummaryStyle style)
+	public string GetValue(Summary summary, BenchmarkCase benchmark) => GetValue(summary, benchmark, null);
+	public string GetValue(Summary summary, BenchmarkCase benchmark, SummaryStyle style)
 	{
-		var hash = ((byte[])benchmark.Target.Method.Invoke(null, null)).ToHexString();
+		var method = benchmark.Descriptor.WorkloadMethod;
+		var instance = Activator.CreateInstance(method.DeclaringType);
+		var hash = ((byte[])method.Invoke(instance, new[] { benchmark.Parameters[0].Value })).ToHexString();
 		if (hash.Length > 16)
 			hash = hash.Substring(0, 12) + "...";
 		return hash;
@@ -35,27 +38,52 @@ class HashColumn : IColumn
 	public override string ToString() => ColumnName;
 }
 
-class ByMethodByPlatformOrderProvider : IOrderProvider
+class DataLengthColumn : IColumn
+{
+	public string ColumnName { get; } = "Data Length";
+	public string Legend => "Size of data hashed";
+	public string Id => ColumnName;
+
+	public ColumnCategory Category => ColumnCategory.Job;
+	public UnitType UnitType => UnitType.Size;
+
+	public int PriorityInCategory => 3;
+	public bool AlwaysShow => true;
+	public bool IsNumeric => true;
+
+	public bool IsDefault(Summary summary, BenchmarkCase benchmark) => false;
+	public bool IsAvailable(Summary summary) => true;
+
+	public string GetValue(Summary summary, BenchmarkCase benchmark) => GetValue(summary, benchmark, null);
+	public string GetValue(Summary summary, BenchmarkCase benchmark, SummaryStyle style)
+	{
+		return ((byte[])benchmark.Parameters[0].Value).Length.ToString();
+	}
+
+	public override string ToString() => ColumnName;
+}
+
+class ByPlatformByDataLengthOrderer : IOrderer
 {
 	public bool SeparateLogicalGroups => true;
 
-	public static readonly IOrderProvider Instance = new ByMethodByPlatformOrderProvider();
+	public static readonly IOrderer Instance = new ByPlatformByDataLengthOrderer();
 
-	public IEnumerable<Benchmark> GetExecutionOrder(Benchmark[] benchmarks) => benchmarks;
+	public IEnumerable<BenchmarkCase> GetExecutionOrder(ImmutableArray<BenchmarkCase> benchmarks) => benchmarks;
 
-	public string GetHighlightGroupKey(Benchmark benchmark) => null;
+	public string GetHighlightGroupKey(BenchmarkCase benchmark) => null;
 
-	public string GetLogicalGroupKey(IConfig config, Benchmark[] allBenchmarks, Benchmark benchmark) =>
-		string.Join("-", benchmark.Target.DisplayInfo, benchmark.Job.Env.Platform.ToString());
+	public string GetLogicalGroupKey(ImmutableArray<BenchmarkCase> allBenchmarks, BenchmarkCase benchmark) =>
+		string.Join("-", benchmark.Job.Environment.Platform.ToString(), ((byte[])benchmark.Parameters.Items[0].Value).Length.ToString("X8"));
 
-	public IEnumerable<IGrouping<string, Benchmark>> GetLogicalGroupOrder(IEnumerable<IGrouping<string, Benchmark>> logicalGroups) =>
-		logicalGroups.OrderBy(it => it.Key);
+	public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups) =>
+		logicalGroups.OrderBy(lg => lg.Key);
 
-	public virtual IEnumerable<Benchmark> GetSummaryOrder(Benchmark[] benchmarks, Summary summary)
+	public virtual IEnumerable<BenchmarkCase> GetSummaryOrder(ImmutableArray<BenchmarkCase> benchmarks, Summary summary)
 	{
-		var benchmarkLogicalGroups = benchmarks.GroupBy(b => GetLogicalGroupKey(summary.Config, benchmarks, b));
+		var benchmarkLogicalGroups = benchmarks.GroupBy(b => GetLogicalGroupKey(benchmarks, b));
 		foreach (var logicalGroup in GetLogicalGroupOrder(benchmarkLogicalGroups))
-			foreach (var benchmark in logicalGroup.OrderBy(b => b.Job.Meta.IsBaseline ? 0 : 0).ThenBy(b => b.Job.Id).ThenBy(b => b.Job.Env.Jit.ToString()))
+			foreach (var benchmark in logicalGroup.OrderBy(b => b.Job.Meta.Baseline ? 0 : 0).ThenBy(b => b.Job.Id).ThenBy(b => b.Job.Environment.Jit.ToString()))
 				yield return benchmark;
 	}
 }
