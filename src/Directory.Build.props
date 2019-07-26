@@ -8,6 +8,7 @@
 		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
+		<Title>High-Performance BLAKE2 Hashing for .NET</Title>
 		<Description>High-Performance BLAKE2 Hashing for .NET</Description>
 		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
 
@@ -41,7 +42,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Release'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01" PrivateAssets="all"/>
 	</ItemGroup>
 
 </Project>

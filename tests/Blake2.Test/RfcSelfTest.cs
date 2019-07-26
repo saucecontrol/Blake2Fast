@@ -4,11 +4,6 @@ using System.Linq;
 using Xunit;
 using SauceControl.Blake2Fast;
 
-internal static class ArrayExtension
-{
-	public static ArraySegment<T> Slice<T>(this T[] a, int start, int count) => new ArraySegment<T>(a, start, count);
-}
-
 public class RfcSelfTest
 {
 	private static readonly byte[] blake2bCheck = new byte[] {
@@ -128,26 +123,28 @@ public class RfcSelfTest
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
 		{
-			var halg = Blake2b.CreateHashAlgorithm(diglen);
-			var hmac = Blake2b.CreateHMAC(diglen, getTestSequence(diglen));
-
-			foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
+			using (var halg = Blake2b.CreateHashAlgorithm(diglen))
+			using (var hmac = Blake2b.CreateHMAC(diglen, getTestSequence(diglen)))
 			{
-				var msg = getTestSequence(msglen);
+				foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
+				{
+					var msg = getTestSequence(msglen);
 
 #if ICRYPTOTRANSFORM
-				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
-				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+					inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+					inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
 #else
-				inc.Update(halg.ComputeHash(msg));
-				inc.Update(hmac.ComputeHash(msg));
+					inc.Update(halg.ComputeHash(msg));
+					inc.Update(hmac.ComputeHash(msg));
 #endif
+				}
 			}
 		}
 
 #if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
+		inc.Dispose();
 #else
 		var hash = inc.Finish();
 #endif
@@ -165,26 +162,28 @@ public class RfcSelfTest
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
 		{
-			var halg = Blake2s.CreateHashAlgorithm(diglen);
-			var hmac = Blake2s.CreateHMAC(diglen, getTestSequence(diglen));
-
-			foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
+			using (var halg = Blake2s.CreateHashAlgorithm(diglen))
+			using (var hmac = Blake2s.CreateHMAC(diglen, getTestSequence(diglen)))
 			{
-				var msg = getTestSequence(msglen);
+				foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
+				{
+					var msg = getTestSequence(msglen);
 
 #if ICRYPTOTRANSFORM
-				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
-				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+					inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+					inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
 #else
-				inc.Update(halg.ComputeHash(msg));
-				inc.Update(hmac.ComputeHash(msg));
+					inc.Update(halg.ComputeHash(msg));
+					inc.Update(hmac.ComputeHash(msg));
 #endif
+				}
 			}
 		}
 
 #if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
+		inc.Dispose();
 #else
 		var hash = inc.Finish();
 #endif

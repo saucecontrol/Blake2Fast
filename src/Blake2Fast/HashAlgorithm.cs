@@ -17,7 +17,7 @@ namespace SauceControl.Blake2Fast
 		public sealed override int HashSize => HashSizeValue;
 #endif
 
-		private Blake2Algorithm alg;
+		private readonly Blake2Algorithm alg;
 		private IBlake2Incremental impl;
 
 		public Blake2HMAC(Blake2Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
