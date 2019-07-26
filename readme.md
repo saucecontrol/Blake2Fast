@@ -61,10 +61,17 @@ async Task<byte[]> ComputeHashAsync(Stream data)
 
 ### Allocation-Free Hashing
 
-The output hash digest can be written to an existing buffer to avoid allocating a new array each time.  This is especially useful when performing an iterative hash, as might be used in a [key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function).
+The output hash digest can be written to an existing buffer to avoid allocating a new array each time.
 
 ```C#
-byte[] DeriveBytes(string password, byte[] salt)
+Span<byte> buffer = stackalloc byte[Blake2b.DefaultDigestLength];
+Blake2b.ComputeAndWriteHash(data, buffer);
+```
+
+This is especially useful when performing an iterative hash, as might be used in a [key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function).
+
+```C#
+byte[] DeriveBytes(string password, ReadOnlySpan<byte> salt)
 {
     // Create key from password, then hash the salt using the key
     var pwkey = Blake2b.ComputeHash(Encoding.UTF8.GetBytes(password));
@@ -153,7 +160,7 @@ Note that the built-in cryptographic hash algorithms in .NET Core forward to pla
 
 On .NET Framework, only scalar (not SIMD) implementations are available for both BLAKE2 algorithms.  The scalar implementations outperform the built-in .NET algorithms in 64-bit applications, but they are slower for large input data on 32-bit.  The SIMD implementations available in .NET Core are faster than the built-in algorithms on either processor architecture.
 
-### Blake2Fast vs other BLAKE2b implementations available on Nuget
+### Blake2Fast vs other BLAKE2b implementations available on NuGet
 
 ```
 |              Method | Data Length |            Mean |             Error |            StdDev |     Gen 0 |     Gen 1 |     Gen 2 |   Allocated |
@@ -186,15 +193,15 @@ On .NET Framework, only scalar (not SIMD) implementations are available for both
 |             NSec(7) |     3145728 |  2,561,597.0 ns |     25,735.378 ns |     1,410.6429 ns |         - |         - |         - |       112 B |
 ```
 
-* (1) `Blake2Sharp` is the reference C# BLAKE2b implementation from the [official BLAKE2 repo](https://github.com/BLAKE2/BLAKE2).  This version is not published to Nuget, so the source is included in the benchmark project directly.
-* (2) `ByteTerrace.Maths.Cryptography.Blake2` version 0.0.4.  This package also includes a BLAKE2s implementation, but it crashed on the 3268 byte and 3KiB inputs, so it is included only in the BLAKE2b benchmark.
+* (1) `Blake2Sharp` is the reference C# BLAKE2b implementation from the [official BLAKE2 repo](https://github.com/BLAKE2/BLAKE2).  This version is not published to NuGet, so the source is included in the benchmark project directly.
+* (2) `ByteTerrace.Maths.Cryptography.Blake2` version 0.0.4.  This package also includes a BLAKE2s implementation, but it crashed on the 3268 byte and 3MiB inputs, so it is included only in the BLAKE2b benchmark.
 * (3) `System.Data.HashFunction.Blake2` version 2.0.0.  BLAKE2b only.
 * (4) `Konscious.Security.Cryptography.Blake2` version 1.0.9.  BLAKE2b only.
 * (5) `Isopoh.Cryptography.Blake2b` version 1.1.2.
 * (6) `Blake2Core` version 1.0.0.  This package contains the reference Blake2Sharp code compiled as a debug (unoptimized) build.  BenchmarkDotNet errors in such cases, so the settings were overridden to allow this library to run.
-* (7) `NSec.Cryptography` 19.5.0.  This implementation of BLAKE2 is not RFC-compliant in that it does not allow digest sizes less than 16 bytes.  This library forwards to a referenced native library (libsodium), which contains an AVX2 implementation of BLAKE2b.
+* (7) `NSec.Cryptography` 19.5.0.  This implementation of BLAKE2b is not RFC-compliant in that it does not allow digest sizes less than 32 bytes.  This library forwards to a referenced native library (libsodium), which contains an AVX2 implementation of BLAKE2b.
 
-### Blake2Fast vs other BLAKE2s implementations available on Nuget
+### Blake2Fast vs other BLAKE2s implementations available on NuGet
 
 ```
 |              Method | Data Length |           Mean |          Error |         StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
@@ -209,7 +216,7 @@ On .NET Framework, only scalar (not SIMD) implementations are available for both
 |      Blake2s-net(1) |     3145728 | 5,469,015.9 ns | 194,030.194 ns | 10,635.4497 ns |      - |     - |     - |     536 B |
 ```
 
-* (1) blake2s-net version 0.1.0.  This is a conversion of the reference Blake2Sharp code to support BLAKE2s.  It is the only other properly working BLAKE2s implementation I could find on Nuget.
+* (1) `blake2s-net` version 0.1.0.  This is a conversion of the reference Blake2Sharp code to support BLAKE2s.  It is the only other properly working BLAKE2s implementation I could find on NuGet.
 
 You can find more detailed comparisons between Blake2Fast and other .NET BLAKE2 implementations starting [here](https://photosauce.net/blog/post/fast-hashing-with-blake2-part-1-nuget-is-a-minefield).  The short version is that Blake2Fast is the fastest and lowest-memory version of RFC-compliant BLAKE2 available for .NET.
 
