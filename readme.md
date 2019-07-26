@@ -186,13 +186,13 @@ On .NET Framework, only scalar (not SIMD) implementations are available for both
 |             NSec(7) |     3145728 |  2,561,597.0 ns |     25,735.378 ns |     1,410.6429 ns |         - |         - |         - |       112 B |
 ```
 
-(1) `Blake2Sharp` is the reference C# BLAKE2b implementation from the [official BLAKE2 repo](https://github.com/BLAKE2/BLAKE2).  This version is not published to Nuget, so the source is included in the benchmark project directly.
-(2) `ByteTerrace.Maths.Cryptography.Blake2` version 0.0.4.  This package also includes a BLAKE2s implementation, but it crashed on the 3268 byte and 3KiB inputs, so it is included only in the BLAKE2b benchmark.
-(3) `System.Data.HashFunction.Blake2` version 2.0.0.  BLAKE2b only.
-(4) `Konscious.Security.Cryptography.Blake2` version 1.0.9.  BLAKE2b only.
-(5) `Isopoh.Cryptography.Blake2b` version 1.1.2.
-(6) `Blake2Core` version 1.0.0.  This package contains the reference Blake2Sharp code compiled as a debug (unoptimized) build.  BenchmarkDotNet errors in such cases, so the settings were overridden to allow this library to run.
-(7) `NSec.Cryptography` 19.5.0.  This implementation of BLAKE2 is not RFC-compliant in that it does not allow digest sizes less than 16 bytes.  This library forwards to a referenced native library (libsodium), which contains an AVX2 implementation of BLAKE2b.
+* (1) `Blake2Sharp` is the reference C# BLAKE2b implementation from the [official BLAKE2 repo](https://github.com/BLAKE2/BLAKE2).  This version is not published to Nuget, so the source is included in the benchmark project directly.
+* (2) `ByteTerrace.Maths.Cryptography.Blake2` version 0.0.4.  This package also includes a BLAKE2s implementation, but it crashed on the 3268 byte and 3KiB inputs, so it is included only in the BLAKE2b benchmark.
+* (3) `System.Data.HashFunction.Blake2` version 2.0.0.  BLAKE2b only.
+* (4) `Konscious.Security.Cryptography.Blake2` version 1.0.9.  BLAKE2b only.
+* (5) `Isopoh.Cryptography.Blake2b` version 1.1.2.
+* (6) `Blake2Core` version 1.0.0.  This package contains the reference Blake2Sharp code compiled as a debug (unoptimized) build.  BenchmarkDotNet errors in such cases, so the settings were overridden to allow this library to run.
+* (7) `NSec.Cryptography` 19.5.0.  This implementation of BLAKE2 is not RFC-compliant in that it does not allow digest sizes less than 16 bytes.  This library forwards to a referenced native library (libsodium), which contains an AVX2 implementation of BLAKE2b.
 
 ### Blake2Fast vs other BLAKE2s implementations available on Nuget
 
@@ -209,7 +209,7 @@ On .NET Framework, only scalar (not SIMD) implementations are available for both
 |      Blake2s-net(1) |     3145728 | 5,469,015.9 ns | 194,030.194 ns | 10,635.4497 ns |      - |     - |     - |     536 B |
 ```
 
-(1) blake2s-net version 0.1.0.  This is a conversion of the reference Blake2Sharp code to support BLAKE2s.  It is the only other properly working BLAKE2s implementation I could find on Nuget.
+* (1) blake2s-net version 0.1.0.  This is a conversion of the reference Blake2Sharp code to support BLAKE2s.  It is the only other properly working BLAKE2s implementation I could find on Nuget.
 
 You can find more detailed comparisons between Blake2Fast and other .NET BLAKE2 implementations starting [here](https://photosauce.net/blog/post/fast-hashing-with-blake2-part-1-nuget-is-a-minefield).  The short version is that Blake2Fast is the fastest and lowest-memory version of RFC-compliant BLAKE2 available for .NET.
 
