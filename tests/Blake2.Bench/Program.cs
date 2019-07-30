@@ -166,8 +166,8 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashKSB2(byte[] data)
 	{
-		using (var b2 = new Konscious.Security.Cryptography.HMACBlake2B(BenchConfig.Key, BenchConfig.HashBytes *  8))
-			return b2.ComputeHash(data);
+		using var b2 = new Konscious.Security.Cryptography.HMACBlake2B(BenchConfig.Key, BenchConfig.HashBytes *  8);
+		return b2.ComputeHash(data);
 	}
 
 	[Benchmark(Description = "Isopoh"), BenchmarkCategory("Blake2b")]
@@ -265,23 +265,23 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashMD5(byte[] data)
 	{
-		using (var md5 = MD5.Create())
-			return md5.ComputeHash(data);
+		using var md5 = MD5.Create();
+		return md5.ComputeHash(data);
 	}
 
 	[Benchmark(Description = "SHA-256"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashSha256(byte[] data)
 	{
-		using (var sha = SHA256.Create())
-			return sha.ComputeHash(data);
+		using var sha = SHA256.Create();
+		return sha.ComputeHash(data);
 	}
 
 	[Benchmark(Description = "SHA-512"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashSha512(byte[] data)
 	{
-		using (var sha = SHA512.Create())
-			return sha.ComputeHash(data);
+		using var sha = SHA512.Create();
+		return sha.ComputeHash(data);
 	}
 }

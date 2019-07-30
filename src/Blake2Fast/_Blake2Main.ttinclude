@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
-using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -23,35 +22,12 @@ namespace SauceControl.Blake2Fast
 		//public const int PersonalizationBytes = 2 * WordSize;
 #>
 
-		private static readonly <#= alg.wtype #>[] iv;
-
-#if USE_INTRINSICS
-		private static readonly Vector128<<#= alg.wtype #>> v128iv0;
-		private static readonly Vector128<<#= alg.wtype #>> v128iv1;
-<#
-if (alg.bits == 64) {
-#>
-		private static readonly Vector128<<#= alg.wtype #>> v128iv2;
-		private static readonly Vector128<<#= alg.wtype #>> v128iv3;
-<#
-}
-#>
-		private static readonly Vector128<sbyte> v128rm0;
-		private static readonly Vector128<sbyte> v128rm1;
-<#
-if (alg.bits == 64) {
-#>
-
-#if USE_AVX2
-		private static readonly Vector256<<#= alg.wtype #>> v256iv0;
-		private static readonly Vector256<<#= alg.wtype #>> v256iv1;
-		private static readonly Vector256<sbyte> v256rm0;
-		private static readonly Vector256<sbyte> v256rm1;
-#endif
-<#
-}
-#>
-#endif
+		private static readonly <#= alg.wtype #>[] iv = new[] {
+			<#= string.Format(alg.ivfmt, alg.iv[0]) #>, <#= string.Format(alg.ivfmt, alg.iv[1]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[2]) #>, <#= string.Format(alg.ivfmt, alg.iv[3]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[4]) #>, <#= string.Format(alg.ivfmt, alg.iv[5]) #>,
+			<#= string.Format(alg.ivfmt, alg.iv[6]) #>, <#= string.Format(alg.ivfmt, alg.iv[7]) #>
+		};
 
 		private fixed byte b[BlockBytes];
 		private fixed <#= alg.wtype #> h[HashWords];
@@ -60,64 +36,36 @@ if (alg.bits == 64) {
 		private uint c;
 		private uint outlen;
 
-		unsafe static Blake2<#= alg.suffix #>Context()
-		{
-			iv = new[] {
-				<#= string.Format(alg.ivfmt, alg.iv[0]) #>, <#= string.Format(alg.ivfmt, alg.iv[1]) #>,
-				<#= string.Format(alg.ivfmt, alg.iv[2]) #>, <#= string.Format(alg.ivfmt, alg.iv[3]) #>,
-				<#= string.Format(alg.ivfmt, alg.iv[4]) #>, <#= string.Format(alg.ivfmt, alg.iv[5]) #>,
-				<#= string.Format(alg.ivfmt, alg.iv[6]) #>, <#= string.Format(alg.ivfmt, alg.iv[7]) #>
-			};
-
-#if USE_INTRINSICS
-			fixed (<#= alg.wtype #>* p = &iv[0])
-			{
-				v128iv0 = Sse2.LoadVector128(p);
-				v128iv1 = Sse2.LoadVector128(p + <#= 128 / alg.bits #>);
+#if FAST_SPAN
+		private static ReadOnlySpan<byte> ivle => new byte[] {
 <#
-if (alg.bits == 64) {
-#>
-				v128iv2 = Sse2.LoadVector128(p + 4);
-				v128iv3 = Sse2.LoadVector128(p + 6);
-<#
+for (int i = 0; i < alg.iv.Length; i++) {
+	string s = "\t\t\t";
+	for (int j = 0; j < alg.bits / 8; j++)
+		s += $"{(j > 0 ? " " : null)}0x{(byte)(alg.iv[i] >> (j * 8)):X2},";
+	WriteLine(i < alg.iv.Length - 1 ? s : s.Substring(0, s.Length - 1));
 }
 #>
-			}
+		};
+#endif
 
-			sbyte* rormask = stackalloc sbyte[] {
+#if USE_INTRINSICS
+		private static ReadOnlySpan<byte> rormask => new byte[] {
 <#
 if (alg.bits == 64) {
 #>
-				3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
-				2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
+			3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
+			2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
 <#
 } else {
 #>
-				2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
-				1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
+			2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
+			1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
 <#
 }
 #>
-			};
-
-			v128rm0 = Sse2.LoadVector128(rormask);
-			v128rm1 = Sse2.LoadVector128(rormask + 16);
-<#
-if (alg.bits == 64) {
-#>
-
-#if USE_AVX2
-			v256iv0 = Vector256.Create(v128iv0, v128iv1);
-			v256iv1 = Vector256.Create(v128iv2, v128iv3);
-
-			v256rm0 = Vector256.Create(v128rm0, v128rm0);
-			v256rm1 = Vector256.Create(v128rm1, v128rm1);
+		};
 #endif
-<#
-}
-#>
-#endif
-		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
@@ -127,7 +75,13 @@ if (alg.bits == 64) {
 				t[1]++;
 		}
 
-		unsafe private static void compress(Blake2<#= alg.suffix #>Context* s, byte* input)
+		private void ensureValidState()
+		{
+			if (f[0] != 0)
+				throw new InvalidOperationException("Hash has already been finalized.");
+		}
+
+		private static void compress(Blake2<#= alg.suffix #>Context* s, byte* input)
 		{
 			<#= alg.wtype #>* m = (<#= alg.wtype #>*)input;
 
@@ -147,17 +101,17 @@ if (alg.bits == 64) {
 #>
 #if USE_AVX2
 			if (Avx2.IsSupported)
-				mixAvx2(s, m);
+				mixAvx2(s->h, m);
 			else
 #endif
 <#
 }
 #>
 			if (Sse41.IsSupported)
-				mixSse41(s, m);
+				mixSse41(s->h, m);
 			else
 #endif
-				mixScalar(s, m);
+				mixScalar(s->h, m);
 		}
 
 		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
@@ -175,7 +129,14 @@ if (alg.bits == 64) {
 				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
 			outlen = (uint)digestLength;
-			Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), ref Unsafe.As<<#= alg.wtype #>, byte>(ref iv[0]), HashBytes);
+
+#if FAST_SPAN
+			if (BitConverter.IsLittleEndian)
+				Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), ref MemoryMarshal.GetReference(ivle), HashBytes);
+			else
+#endif
+				Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), ref Unsafe.As<<#= alg.wtype #>, byte>(ref iv[0]), HashBytes);
+
 			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
 <#
@@ -206,6 +167,8 @@ if (alg.bits == 64) {
 
 		public void Update(ReadOnlySpan<byte> input)
 		{
+			ensureValidState();
+
 			uint inlen = (uint)input.Length;
 			uint clen = 0u;
 			uint blockrem = BlockBytes - c;
@@ -226,7 +189,7 @@ if (alg.bits == 64) {
 
 			if (inlen + clen > BlockBytes)
 			{
-				fixed (byte* pinput = &input[0])
+				fixed (byte* pinput = input)
 				fixed (Blake2<#= alg.suffix #>Context* s = &this)
 				while (inlen > BlockBytes)
 				{
@@ -248,8 +211,7 @@ if (alg.bits == 64) {
 
 		private void finish(Span<byte> hash)
 		{
-			if (f[0] != 0)
-				throw new InvalidOperationException("Hash has already been finalized.");
+			ensureValidState();
 
 			if (c < BlockBytes)
 				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);

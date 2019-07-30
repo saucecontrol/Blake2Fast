@@ -1,8 +1,9 @@
 <Project>
 
 	<PropertyGroup>
-		<LangVersion>latest</LangVersion>
+		<LangVersion>8</LangVersion>
 		<Features>strict</Features>
+		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
 		<Configuration Condition="'$(Configuration)'==''">Release</Configuration>

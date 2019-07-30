@@ -9,7 +9,7 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2bContext
 	{
-		unsafe private static void mixScalar(Blake2bContext* s, ulong* m)
+		private static void mixScalar(ulong* sh, ulong* m)
 		{
 			ulong m00 = m[00];
 			ulong m01 = m[01];
@@ -28,14 +28,14 @@ namespace SauceControl.Blake2Fast
 			ulong m14 = m[14];
 			ulong m15 = m[15];
 
-			ulong v00 = s->h[0];
-			ulong v01 = s->h[1];
-			ulong v02 = s->h[2];
-			ulong v03 = s->h[3];
-			ulong v04 = s->h[4];
-			ulong v05 = s->h[5];
-			ulong v06 = s->h[6];
-			ulong v07 = s->h[7];
+			ulong v00 = sh[0];
+			ulong v01 = sh[1];
+			ulong v02 = sh[2];
+			ulong v03 = sh[3];
+			ulong v04 = sh[4];
+			ulong v05 = sh[5];
+			ulong v06 = sh[6];
+			ulong v07 = sh[7];
 
 			ulong v08 = 0x6A09E667F3BCC908ul;
 			ulong v09 = 0xBB67AE8584CAA73Bul;
@@ -46,9 +46,9 @@ namespace SauceControl.Blake2Fast
 			ulong v14 = 0x1F83D9ABFB41BD6Bul;
 			ulong v15 = 0x5BE0CD19137E2179ul;
 
-			v12 ^= s->t[0];
-			v13 ^= s->t[1];
-			v14 ^= s->f[0];
+			v12 ^= sh[8];  // t[0]
+			v13 ^= sh[9];  // t[1]
+			v14 ^= sh[10]; // f[0]
 
 			//ROUND 1
 			v00 += m00;
@@ -1598,14 +1598,14 @@ namespace SauceControl.Blake2Fast
 			v06 ^= v11;
 			v06 = (v06 >> 63) ^ (v06 <<  1);
 
-			s->h[0] ^= v00 ^ v08;
-			s->h[1] ^= v01 ^ v09;
-			s->h[2] ^= v02 ^ v10;
-			s->h[3] ^= v03 ^ v11;
-			s->h[4] ^= v04 ^ v12;
-			s->h[5] ^= v05 ^ v13;
-			s->h[6] ^= v06 ^ v14;
-			s->h[7] ^= v07 ^ v15;
+			sh[0] ^= v00 ^ v08;
+			sh[1] ^= v01 ^ v09;
+			sh[2] ^= v02 ^ v10;
+			sh[3] ^= v03 ^ v11;
+			sh[4] ^= v04 ^ v12;
+			sh[5] ^= v05 ^ v13;
+			sh[6] ^= v06 ^ v14;
+			sh[7] ^= v07 ^ v15;
 		}
 	}
 }

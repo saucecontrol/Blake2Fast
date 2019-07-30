@@ -11,7 +11,7 @@ namespace SauceControl.Blake2Fast
 {
 	unsafe internal partial struct Blake2<#= alg.suffix #>Context
 	{
-		unsafe private static void mixScalar(Blake2<#= alg.suffix #>Context* s, <#= alg.wtype #>* m)
+		private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
 		{
 <#
 for (int i = 0; i < 16; i++) {
@@ -24,9 +24,9 @@ WriteLine(null);
 mixvars (alg, new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
 mixvars (alg, new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
 #>
-			v12 ^= s->t[0];
-			v13 ^= s->t[1];
-			v14 ^= s->f[0];
+			v12 ^= sh[8];  // t[0]
+			v13 ^= sh[9];  // t[1]
+			v14 ^= sh[10]; // f[0]
 
 <#
 for (int i = 0; i < alg.rounds; i++) {
@@ -55,7 +55,7 @@ for (int i = 0; i < alg.rounds; i++) {
 
 for (int i = 0; i < 8; i++) {
 #>
-			s->h[<#=i#>] ^= v<#=i.ToString("d2")#> ^ v<#=(i+8).ToString("d2")#>;
+			sh[<#=i#>] ^= v<#=i.ToString("d2")#> ^ v<#=(i+8).ToString("d2")#>;
 <#
 }
 #>
@@ -83,7 +83,7 @@ void mixvars(b2alg alg, int[] pos)
 {
 	foreach (int j in pos) {
 #>
-			<#= alg.wtype #> v<#=j.ToString("d2")#> = <#= j < 8 ? $"s->h[{j}]" : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
+			<#= alg.wtype #> v<#=j.ToString("d2")#> = <#= j < 8 ? $"sh[{j}]" : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
 <#+
 	}
 	WriteLine(null);

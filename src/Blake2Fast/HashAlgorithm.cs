@@ -20,6 +20,7 @@ namespace SauceControl.Blake2Fast
 		private readonly Blake2Algorithm alg;
 		private IBlake2Incremental impl;
 
+#nullable disable // until the analyzer understands `Initialize()` sets `impl`
 		public Blake2HMAC(Blake2Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
 		{
 			alg = hashAlg;
@@ -35,6 +36,7 @@ namespace SauceControl.Blake2Fast
 
 			Initialize();
 		}
+#nullable enable
 
 		public override byte[] Key
 		{

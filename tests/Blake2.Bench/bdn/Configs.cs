@@ -42,8 +42,10 @@ public class AllowNonOptimizedConfig : ManualConfig
 		var cli30_32 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx86, "Default");
 		var cli30_64 = NetCoreAppSettings.NetCoreApp30.WithCustomDotNetCliPath(Paths.DotNetCLIx64, "Default");
 
-		//Add(Job.Job.ShortRun.With(Jit.RyuJit).With(Platform.X64).With(CsProjCoreToolchain.From(cli30_64)).WithId("netcoreapp3.0"));
-		//Add(Job.Job.ShortRun.With(Jit.RyuJit).With(Platform.X86).With(CsProjCoreToolchain.From(cli30_32)).WithId("netcoreapp3.0"));
+		//Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X64).With(CsProjCoreToolchain.From(cli30_64)).WithId("netcoreapp3.0"));
+		//Add(Job.ShortRun.With(Jit.RyuJit).With(Platform.X86).With(CsProjCoreToolchain.From(cli30_32)).WithId("netcoreapp3.0"));
+		//Add(Job.ShortRun.With(Runtime.Clr).With(Jit.RyuJit).With(Platform.X64).WithId("net472").AsBaseline());
+		//Add(Job.ShortRun.With(Runtime.Clr).With(Jit.LegacyJit).With(Platform.X86).WithId("net472").AsBaseline());
 		Add(Job.ShortRun);
 
 		Add(JitOptimizationsValidator.DontFailOnError); // needed for Blake2Core, which is not optimized in nuget package

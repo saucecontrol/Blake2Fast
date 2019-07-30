@@ -116,35 +116,33 @@ public class RfcSelfTest
 	private static bool blake2bHmacSelfTest()
 	{
 #if ICRYPTOTRANSFORM
-		var inc = Blake2b.CreateHashAlgorithm(blake2bCheck.Length);
+		using var inc = Blake2b.CreateHashAlgorithm(blake2bCheck.Length);
 #else
 		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
 #endif
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
 		{
-			using (var halg = Blake2b.CreateHashAlgorithm(diglen))
-			using (var hmac = Blake2b.CreateHMAC(diglen, getTestSequence(diglen)))
+			using var halg = Blake2b.CreateHashAlgorithm(diglen);
+			using var hmac = Blake2b.CreateHMAC(diglen, getTestSequence(diglen));
+
+			foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
 			{
-				foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
-				{
-					var msg = getTestSequence(msglen);
+				var msg = getTestSequence(msglen);
 
 #if ICRYPTOTRANSFORM
-					inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
-					inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
 #else
-					inc.Update(halg.ComputeHash(msg));
-					inc.Update(hmac.ComputeHash(msg));
+				inc.Update(halg.ComputeHash(msg));
+				inc.Update(hmac.ComputeHash(msg));
 #endif
-				}
 			}
 		}
 
 #if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
-		inc.Dispose();
 #else
 		var hash = inc.Finish();
 #endif
@@ -155,35 +153,33 @@ public class RfcSelfTest
 	private static bool blake2sHmacSelfTest()
 	{
 #if ICRYPTOTRANSFORM
-		var inc = Blake2s.CreateHashAlgorithm(blake2bCheck.Length);
+		using var inc = Blake2s.CreateHashAlgorithm(blake2bCheck.Length);
 #else
 		var inc = Blake2s.CreateIncrementalHasher(blake2bCheck.Length);
 #endif
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
 		{
-			using (var halg = Blake2s.CreateHashAlgorithm(diglen))
-			using (var hmac = Blake2s.CreateHMAC(diglen, getTestSequence(diglen)))
+			using var halg = Blake2s.CreateHashAlgorithm(diglen);
+			using var hmac = Blake2s.CreateHMAC(diglen, getTestSequence(diglen));
+
+			foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
 			{
-				foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
-				{
-					var msg = getTestSequence(msglen);
+				var msg = getTestSequence(msglen);
 
 #if ICRYPTOTRANSFORM
-					inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
-					inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
+				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
 #else
-					inc.Update(halg.ComputeHash(msg));
-					inc.Update(hmac.ComputeHash(msg));
+				inc.Update(halg.ComputeHash(msg));
+				inc.Update(hmac.ComputeHash(msg));
 #endif
-				}
 			}
 		}
 
 #if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
-		inc.Dispose();
 #else
 		var hash = inc.Finish();
 #endif

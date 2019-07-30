@@ -17,8 +17,9 @@
 		<AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
 		<Product>$(MSBuildProjectName)</Product>
 
-		<LangVersion>latest</LangVersion>
+		<LangVersion>8</LangVersion>
 		<Features>strict</Features>
+		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)$(Owners).snk</AssemblyOriginatorKeyFile>

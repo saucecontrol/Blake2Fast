@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #if USE_INTRINSICS
-using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -19,23 +18,12 @@ namespace SauceControl.Blake2Fast
 		public const int HashBytes = HashWords * WordSize;
 		public const int MaxKeyBytes = HashBytes;
 
-		private static readonly ulong[] iv;
-
-#if USE_INTRINSICS
-		private static readonly Vector128<ulong> v128iv0;
-		private static readonly Vector128<ulong> v128iv1;
-		private static readonly Vector128<ulong> v128iv2;
-		private static readonly Vector128<ulong> v128iv3;
-		private static readonly Vector128<sbyte> v128rm0;
-		private static readonly Vector128<sbyte> v128rm1;
-
-#if USE_AVX2
-		private static readonly Vector256<ulong> v256iv0;
-		private static readonly Vector256<ulong> v256iv1;
-		private static readonly Vector256<sbyte> v256rm0;
-		private static readonly Vector256<sbyte> v256rm1;
-#endif
-#endif
+		private static readonly ulong[] iv = new[] {
+			0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
+			0x3C6EF372FE94F82Bul, 0xA54FF53A5F1D36F1ul,
+			0x510E527FADE682D1ul, 0x9B05688C2B3E6C1Ful,
+			0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
+		};
 
 		private fixed byte b[BlockBytes];
 		private fixed ulong h[HashWords];
@@ -44,41 +32,25 @@ namespace SauceControl.Blake2Fast
 		private uint c;
 		private uint outlen;
 
-		unsafe static Blake2bContext()
-		{
-			iv = new[] {
-				0x6A09E667F3BCC908ul, 0xBB67AE8584CAA73Bul,
-				0x3C6EF372FE94F82Bul, 0xA54FF53A5F1D36F1ul,
-				0x510E527FADE682D1ul, 0x9B05688C2B3E6C1Ful,
-				0x1F83D9ABFB41BD6Bul, 0x5BE0CD19137E2179ul
-			};
+#if FAST_SPAN
+		private static ReadOnlySpan<byte> ivle => new byte[] {
+			0x08, 0xC9, 0xBC, 0xF3, 0x67, 0xE6, 0x09, 0x6A,
+			0x3B, 0xA7, 0xCA, 0x84, 0x85, 0xAE, 0x67, 0xBB,
+			0x2B, 0xF8, 0x94, 0xFE, 0x72, 0xF3, 0x6E, 0x3C,
+			0xF1, 0x36, 0x1D, 0x5F, 0x3A, 0xF5, 0x4F, 0xA5,
+			0xD1, 0x82, 0xE6, 0xAD, 0x7F, 0x52, 0x0E, 0x51,
+			0x1F, 0x6C, 0x3E, 0x2B, 0x8C, 0x68, 0x05, 0x9B,
+			0x6B, 0xBD, 0x41, 0xFB, 0xAB, 0xD9, 0x83, 0x1F,
+			0x79, 0x21, 0x7E, 0x13, 0x19, 0xCD, 0xE0, 0x5B
+		};
+#endif
 
 #if USE_INTRINSICS
-			fixed (ulong* p = &iv[0])
-			{
-				v128iv0 = Sse2.LoadVector128(p);
-				v128iv1 = Sse2.LoadVector128(p + 2);
-				v128iv2 = Sse2.LoadVector128(p + 4);
-				v128iv3 = Sse2.LoadVector128(p + 6);
-			}
-
-			sbyte* rormask = stackalloc sbyte[] {
-				3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
-				2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
-			};
-
-			v128rm0 = Sse2.LoadVector128(rormask);
-			v128rm1 = Sse2.LoadVector128(rormask + 16);
-
-#if USE_AVX2
-			v256iv0 = Vector256.Create(v128iv0, v128iv1);
-			v256iv1 = Vector256.Create(v128iv2, v128iv3);
-
-			v256rm0 = Vector256.Create(v128rm0, v128rm0);
-			v256rm1 = Vector256.Create(v128rm1, v128rm1);
+		private static ReadOnlySpan<byte> rormask => new byte[] {
+			3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
+			2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
+		};
 #endif
-#endif
-		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void addLength(uint len)
@@ -88,7 +60,13 @@ namespace SauceControl.Blake2Fast
 				t[1]++;
 		}
 
-		unsafe private static void compress(Blake2bContext* s, byte* input)
+		private void ensureValidState()
+		{
+			if (f[0] != 0)
+				throw new InvalidOperationException("Hash has already been finalized.");
+		}
+
+		private static void compress(Blake2bContext* s, byte* input)
 		{
 			ulong* m = (ulong*)input;
 
@@ -105,14 +83,14 @@ namespace SauceControl.Blake2Fast
 #if USE_INTRINSICS
 #if USE_AVX2
 			if (Avx2.IsSupported)
-				mixAvx2(s, m);
+				mixAvx2(s->h, m);
 			else
 #endif
 			if (Sse41.IsSupported)
-				mixSse41(s, m);
+				mixSse41(s->h, m);
 			else
 #endif
-				mixScalar(s, m);
+				mixScalar(s->h, m);
 		}
 
 		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
@@ -130,7 +108,14 @@ namespace SauceControl.Blake2Fast
 				throw new ArgumentException($"Key must be between 0 and {MaxKeyBytes} bytes in length", nameof(key));
 
 			outlen = (uint)digestLength;
-			Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
+
+#if FAST_SPAN
+			if (BitConverter.IsLittleEndian)
+				Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref MemoryMarshal.GetReference(ivle), HashBytes);
+			else
+#endif
+				Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref Unsafe.As<ulong, byte>(ref iv[0]), HashBytes);
+
 			h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
 			if (keylen > 0)
@@ -142,6 +127,8 @@ namespace SauceControl.Blake2Fast
 
 		public void Update(ReadOnlySpan<byte> input)
 		{
+			ensureValidState();
+
 			uint inlen = (uint)input.Length;
 			uint clen = 0u;
 			uint blockrem = BlockBytes - c;
@@ -162,7 +149,7 @@ namespace SauceControl.Blake2Fast
 
 			if (inlen + clen > BlockBytes)
 			{
-				fixed (byte* pinput = &input[0])
+				fixed (byte* pinput = input)
 				fixed (Blake2bContext* s = &this)
 				while (inlen > BlockBytes)
 				{
@@ -184,8 +171,7 @@ namespace SauceControl.Blake2Fast
 
 		private void finish(Span<byte> hash)
 		{
-			if (f[0] != 0)
-				throw new InvalidOperationException("Hash has already been finalized.");
+			ensureValidState();
 
 			if (c < BlockBytes)
 				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);

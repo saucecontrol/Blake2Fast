@@ -10,6 +10,7 @@
 #if USE_INTRINSICS && USE_AVX2
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace SauceControl.Blake2Fast
@@ -18,15 +19,22 @@ namespace SauceControl.Blake2Fast
 	{
 		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		unsafe private static void mixAvx2(Blake2bContext* s, ulong* m)
+		private static void mixAvx2(ulong* sh, ulong* m)
 		{
-			var row1 = Avx.LoadVector256(s->h);
-			var row2 = Avx.LoadVector256(s->h + 4);
+			// Rotate shuffle masks. We can safely convert the ref to a pointer because the compiler guarantees the
+			// data is in a fixed location, and the ref itself is converted from a pointer. Same for the IV below.
+			sbyte* prm = (sbyte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(rormask));
+			var r24 = Avx2.BroadcastVector128ToVector256(prm);
+			var r16 = Avx2.BroadcastVector128ToVector256(prm + Vector128<sbyte>.Count);
 
-			var row3 = v256iv0;
-			var row4 = v256iv1;
+			var row1 = Avx.LoadVector256(sh);
+			var row2 = Avx.LoadVector256(sh + Vector256<ulong>.Count);
 
-			row4 = Avx2.Xor(row4, Avx.LoadVector256(s->t)); // reads into f[] as well
+			ulong* piv = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(ivle));
+			var row3 = Avx.LoadVector256(piv);
+			var row4 = Avx.LoadVector256(piv + Vector256<ulong>.Count);
+
+			row4 = Avx2.Xor(row4, Avx.LoadVector256(sh + Vector256<ulong>.Count * 2)); // t[] and f[]
 
 <#
 for (int i = 0; i < 12; i++) {
@@ -34,12 +42,9 @@ for (int i = 0; i < 12; i++) {
 	if (i == 0) {
 #>
 			var m0 = Avx2.BroadcastVector128ToVector256(m);
-			var m1 = Avx2.BroadcastVector128ToVector256(m + 2);
-			var m2 = Avx2.BroadcastVector128ToVector256(m + 4);
-			var m3 = Avx2.BroadcastVector128ToVector256(m + 6);
-
-			var r24 = v256rm0;
-			var r16 = v256rm1;
+			var m1 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count);
+			var m2 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 2);
+			var m3 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 3);
 
 <#
 	}
@@ -51,10 +56,10 @@ for (int i = 0; i < 12; i++) {
 
 	if (i == 0) {
 #>
-			var m4 = Avx2.BroadcastVector128ToVector256(m + 8);
-			var m5 = Avx2.BroadcastVector128ToVector256(m + 10);
-			var m6 = Avx2.BroadcastVector128ToVector256(m + 12);
-			var m7 = Avx2.BroadcastVector128ToVector256(m + 14);
+			var m4 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 4);
+			var m5 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 5);
+			var m6 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 6);
+			var m7 = Avx2.BroadcastVector128ToVector256(m + Vector128<ulong>.Count * 7);
 
 <#
 	}
@@ -67,11 +72,11 @@ for (int i = 0; i < 12; i++) {
 #>
 			row1 = Avx2.Xor(row1, row3);
 			row2 = Avx2.Xor(row2, row4);
-			row1 = Avx2.Xor(row1, Avx2.LoadVector256(s->h));
-			row2 = Avx2.Xor(row2, Avx2.LoadVector256(s->h + 4));
+			row1 = Avx2.Xor(row1, Avx2.LoadVector256(sh));
+			row2 = Avx2.Xor(row2, Avx2.LoadVector256(sh + Vector256<ulong>.Count));
 
-			Avx2.Store(s->h, row1);
-			Avx2.Store(s->h + 4, row2);
+			Avx2.Store(sh, row1);
+			Avx2.Store(sh + Vector256<ulong>.Count, row2);
 		}
 	}
 }

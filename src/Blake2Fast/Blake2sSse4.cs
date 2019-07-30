@@ -8,6 +8,7 @@
 #if USE_INTRINSICS
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace SauceControl.Blake2Fast
@@ -18,23 +19,25 @@ namespace SauceControl.Blake2Fast
 #if !OLD_INTRINSICS
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #endif
-		unsafe private static void mixSse41(Blake2sContext* s, uint* m)
+		private static void mixSse41(uint* sh, uint* m)
 		{
-			var row1 = Sse2.LoadVector128(s->h);
-			var row2 = Sse2.LoadVector128(s->h + 4);
+			ref byte rrm = ref MemoryMarshal.GetReference(rormask);
+			var r16 = Unsafe.As<byte, Vector128<sbyte>>(ref rrm);
+			var r8  = Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.Add(ref rrm, 16));
 
-			var row3 = v128iv0;
-			var row4 = v128iv1;
+			var row1 = Sse2.LoadVector128(sh);
+			var row2 = Sse2.LoadVector128(sh + 4);
 
-			row4 = Sse2.Xor(row4, Sse2.LoadVector128(s->t)); // reads into f[] as well
+			ref byte riv = ref MemoryMarshal.GetReference(ivle);
+			var row3 = Unsafe.As<byte, Vector128<uint>>(ref riv);
+			var row4 = Unsafe.As<byte, Vector128<uint>>(ref Unsafe.Add(ref riv, 16));
+
+			row4 = Sse2.Xor(row4, Sse2.LoadVector128(sh + 8)); // t[] and f[]
 
 			var m0 = Sse2.LoadVector128(m);
 			var m1 = Sse2.LoadVector128(m + 4);
 			var m2 = Sse2.LoadVector128(m + 8);
 			var m3 = Sse2.LoadVector128(m + 12);
-
-			var r16 = v128rm0;
-			var r8  = v128rm1;
 
 			//ROUND 1
 #if OLD_INTRINSICS
@@ -1063,10 +1066,10 @@ namespace SauceControl.Blake2Fast
 
 			row1 = Sse2.Xor(row1, row3);
 			row2 = Sse2.Xor(row2, row4);
-			row1 = Sse2.Xor(row1, Sse2.LoadVector128(s->h));
-			row2 = Sse2.Xor(row2, Sse2.LoadVector128(s->h + 4));
-			Sse2.Store(s->h, row1);
-			Sse2.Store(s->h + 4, row2);
+			row1 = Sse2.Xor(row1, Sse2.LoadVector128(sh));
+			row2 = Sse2.Xor(row2, Sse2.LoadVector128(sh + 4));
+			Sse2.Store(sh, row1);
+			Sse2.Store(sh + 4, row2);
 		}
 	}
 }
