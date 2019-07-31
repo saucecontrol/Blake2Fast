@@ -23,9 +23,9 @@ namespace SauceControl.Blake2Fast
 		{
 			// Rotate shuffle masks. We can safely convert the ref to a pointer because the compiler guarantees the
 			// data is in a fixed location, and the ref itself is converted from a pointer. Same for the IV below.
-			sbyte* prm = (sbyte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(rormask));
+			byte* prm = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(rormask));
 			var r24 = Avx2.BroadcastVector128ToVector256(prm);
-			var r16 = Avx2.BroadcastVector128ToVector256(prm + Vector128<sbyte>.Count);
+			var r16 = Avx2.BroadcastVector128ToVector256(prm + Vector128<byte>.Count);
 
 			var row1 = Avx.LoadVector256(sh);
 			var row2 = Avx.LoadVector256(sh + Vector256<ulong>.Count);
@@ -113,7 +113,7 @@ void g1() {
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 <#+
 }
@@ -124,7 +124,7 @@ void g2() {
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);

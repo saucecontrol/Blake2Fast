@@ -22,8 +22,13 @@ namespace SauceControl.Blake2Fast
 		private static void mixSse41(ulong* sh, ulong* m)
 		{
 			ref byte rrm = ref MemoryMarshal.GetReference(rormask);
+#if OLD_INTRINSICS
 			var r24 = Unsafe.As<byte, Vector128<sbyte>>(ref rrm);
 			var r16 = Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.Add(ref rrm, 16));
+#else
+			var r24 = Unsafe.As<byte, Vector128<byte>>(ref rrm);
+			var r16 = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref rrm, Vector128<byte>.Count));
+#endif
 
 			var row1l = Sse2.LoadVector128(sh);
 			var row1h = Sse2.LoadVector128(sh + 2);
@@ -73,8 +78,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m0, m1);
@@ -91,8 +96,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -166,8 +171,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m4, m5);
@@ -184,8 +189,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -255,8 +260,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m5, m4);
@@ -277,8 +282,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -351,8 +356,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m6, m1);
@@ -369,8 +374,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -444,8 +449,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m4, m0);
@@ -466,8 +471,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -540,8 +545,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m7, m3);
@@ -562,8 +567,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -633,8 +638,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m4, m0);
@@ -651,8 +656,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -726,8 +731,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m3, m5);
@@ -744,8 +749,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -815,8 +820,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 #if OLD_INTRINSICS
@@ -838,8 +843,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -913,8 +918,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 #if OLD_INTRINSICS
@@ -936,8 +941,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1007,8 +1012,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m6, m5);
@@ -1025,8 +1030,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1099,8 +1104,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m6, m2);
@@ -1121,8 +1126,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1196,8 +1201,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m2, m7);
@@ -1218,8 +1223,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1292,8 +1297,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m3, m1);
@@ -1314,8 +1319,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1389,8 +1394,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 #if OLD_INTRINSICS
@@ -1411,8 +1416,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1481,8 +1486,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m0, m2);
@@ -1499,8 +1504,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1574,8 +1579,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m7, m4);
@@ -1596,8 +1601,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1670,8 +1675,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 #if OLD_INTRINSICS
@@ -1692,8 +1697,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1763,8 +1768,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m1, m2);
@@ -1785,8 +1790,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1855,8 +1860,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 #if OLD_INTRINSICS
@@ -1877,8 +1882,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -1948,8 +1953,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m0, m1);
@@ -1966,8 +1971,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -2036,8 +2041,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackHigh(m4, m5);
@@ -2054,8 +2059,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -2125,8 +2130,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m5, m4);
@@ -2147,8 +2152,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);
@@ -2221,8 +2226,8 @@ namespace SauceControl.Blake2Fast
 			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
 			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
 #else
-			row2l = Ssse3.Shuffle(row2l.AsSByte(), r24).AsUInt64();
-			row2h = Ssse3.Shuffle(row2h.AsSByte(), r24).AsUInt64();
+			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
+			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 #endif
 
 			b0 = Sse2.UnpackLow(m6, m1);
@@ -2239,8 +2244,8 @@ namespace SauceControl.Blake2Fast
 			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
 			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
 #else
-			row4l = Ssse3.Shuffle(row4l.AsSByte(), r16).AsUInt64();
-			row4h = Ssse3.Shuffle(row4h.AsSByte(), r16).AsUInt64();
+			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
+			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
 #endif
 
 			row3l = Sse2.Add(row3l, row4l);

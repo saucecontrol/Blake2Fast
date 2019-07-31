@@ -21,9 +21,9 @@ namespace SauceControl.Blake2Fast
 		{
 			// Rotate shuffle masks. We can safely convert the ref to a pointer because the compiler guarantees the
 			// data is in a fixed location, and the ref itself is converted from a pointer. Same for the IV below.
-			sbyte* prm = (sbyte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(rormask));
+			byte* prm = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(rormask));
 			var r24 = Avx2.BroadcastVector128ToVector256(prm);
-			var r16 = Avx2.BroadcastVector128ToVector256(prm + Vector128<sbyte>.Count);
+			var r16 = Avx2.BroadcastVector128ToVector256(prm + Vector128<byte>.Count);
 
 			var row1 = Avx.LoadVector256(sh);
 			var row2 = Avx.LoadVector256(sh + Vector256<ulong>.Count);
@@ -51,7 +51,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m0, m1);
 			t1 = Avx2.UnpackHigh(m2, m3);
@@ -60,7 +60,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -87,7 +87,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m4, m5);
 			t1 = Avx2.UnpackHigh(m6, m7);
@@ -96,7 +96,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -119,7 +119,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m5, m4);
 			t1 = Avx2.AlignRight(m3, m7, 8);
@@ -128,7 +128,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -150,7 +150,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m6, m1);
 			t1 = Avx2.UnpackHigh(m3, m1);
@@ -159,7 +159,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -182,7 +182,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m4, m0);
 			t1 = Avx2.Blend(m1.AsUInt32(), m6.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -191,7 +191,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -213,7 +213,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m7, m3);
 			t1 = Avx2.AlignRight(m2, m0, 8);
@@ -222,7 +222,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -245,7 +245,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m4, m0);
 			t1 = Avx2.UnpackLow(m6, m7);
@@ -254,7 +254,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -276,7 +276,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m3, m5);
 			t1 = Avx2.UnpackLow(m0, m4);
@@ -285,7 +285,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -308,7 +308,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.Blend(m0.AsUInt32(), m3.AsUInt32(), 0b_1100_1100).AsUInt64();
 			t1 = Avx2.Blend(m2.AsUInt32(), m7.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -317,7 +317,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -339,7 +339,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.AlignRight(m6, m0, 8);
 			t1 = Avx2.Blend(m4.AsUInt32(), m6.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -348,7 +348,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -371,7 +371,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m6, m5);
 			t1 = Avx2.UnpackHigh(m5, m1);
@@ -380,7 +380,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -402,7 +402,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m6, m2);
 			t1 = Avx2.Blend(m7.AsUInt32(), m4.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -411,7 +411,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -434,7 +434,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m2, m7);
 			t1 = Avx2.AlignRight(m5, m6, 8);
@@ -443,7 +443,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -465,7 +465,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m3, m1);
 			t1 = Avx2.Blend(m1.AsUInt32(), m5.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -474,7 +474,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -497,7 +497,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.AlignRight(m7, m5, 8);
 			t1 = Avx2.UnpackHigh(m0, m4);
@@ -506,7 +506,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -528,7 +528,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m0, m2);
 			t1 = Avx2.UnpackLow(m3, m5);
@@ -537,7 +537,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -560,7 +560,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m7, m4);
 			t1 = Avx2.AlignRight(m4, m1, 8);
@@ -569,7 +569,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -591,7 +591,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.Blend(m1.AsUInt32(), m3.AsUInt32(), 0b_1100_1100).AsUInt64();
 			t1 = m2;
@@ -600,7 +600,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -623,7 +623,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m1, m2);
 			t1 = Avx2.Blend(m3.AsUInt32(), m2.AsUInt32(), 0b_1100_1100).AsUInt64();
@@ -632,7 +632,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -654,7 +654,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.AlignRight(m7, m5, 8);
 			t1 = Avx2.UnpackLow(m6, m0);
@@ -663,7 +663,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -686,7 +686,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m0, m1);
 			t1 = Avx2.UnpackHigh(m2, m3);
@@ -695,7 +695,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -717,7 +717,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackHigh(m4, m5);
 			t1 = Avx2.UnpackHigh(m6, m7);
@@ -726,7 +726,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -749,7 +749,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m5, m4);
 			t1 = Avx2.AlignRight(m3, m7, 8);
@@ -758,7 +758,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
@@ -780,7 +780,7 @@ namespace SauceControl.Blake2Fast
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
-			row2 = Avx2.Shuffle(row2.AsSByte(), r24).AsUInt64();
+			row2 = Avx2.Shuffle(row2.AsByte(), r24).AsUInt64();
 
 			t0 = Avx2.UnpackLow(m6, m1);
 			t1 = Avx2.UnpackHigh(m3, m1);
@@ -789,7 +789,7 @@ namespace SauceControl.Blake2Fast
 			//G2
 			row1 = Avx2.Add(Avx2.Add(row1, b0), row2);
 			row4 = Avx2.Xor(row4, row1);
-			row4 = Avx2.Shuffle(row4.AsSByte(), r16).AsUInt64();
+			row4 = Avx2.Shuffle(row4.AsByte(), r16).AsUInt64();
 
 			row3 = Avx2.Add(row3, row4);
 			row2 = Avx2.Xor(row2, row3);
