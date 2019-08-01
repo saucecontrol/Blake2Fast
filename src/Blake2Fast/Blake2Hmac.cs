@@ -4,24 +4,24 @@ using System.Security.Cryptography;
 
 namespace SauceControl.Blake2Fast
 {
-	internal enum Blake2Algorithm
+	internal sealed class Blake2Hmac : HMAC
 	{
-		Blake2b,
-		Blake2s
-	}
+		internal enum Algorithm
+		{
+			Blake2b,
+			Blake2s
+		}
 
-	internal sealed class Blake2HMAC : HMAC
-	{
 #if NETSTANDARD1_3
 		private readonly int HashSizeValue;
 		public sealed override int HashSize => HashSizeValue;
 #endif
 
-		private readonly Blake2Algorithm alg;
+		private readonly Algorithm alg;
 		private IBlake2Incremental impl;
 
 #nullable disable // until the analyzer understands `Initialize()` sets `impl`
-		public Blake2HMAC(Blake2Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
+		public Blake2Hmac(Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
 		{
 			alg = hashAlg;
 			HashSizeValue = hashBytes * 8;
@@ -52,7 +52,7 @@ namespace SauceControl.Blake2Fast
 			var key = new ReadOnlySpan<byte>(KeyValue);
 #endif
 
-			impl = alg == Blake2Algorithm.Blake2b ?
+			impl = alg == Algorithm.Blake2b ?
 				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
 				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
 		}

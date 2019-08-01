@@ -29,47 +29,47 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Update="Blake2b.cs">
+		<Compile Update="Blake2b\Blake2b.cs">
 			<DependentUpon>Blake2b.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2bContext.cs">
+		<Compile Update="Blake2b\Blake2bContext.cs">
 			<DependentUpon>Blake2bContext.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2bScalar.cs">
+		<Compile Update="Blake2b\Blake2bScalar.cs">
 			<DependentUpon>Blake2bScalar.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2bSse4.cs">
+		<Compile Update="Blake2b\Blake2bSse4.cs">
 			<DependentUpon>Blake2bSse4.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2bAvx2.cs">
+		<Compile Update="Blake2b\Blake2bAvx2.cs">
 			<DependentUpon>Blake2bAvx2.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2s.cs">
+		<Compile Update="Blake2s\Blake2s.cs">
 			<DependentUpon>Blake2s.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2sContext.cs">
+		<Compile Update="Blake2s\Blake2sContext.cs">
 			<DependentUpon>Blake2sContext.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2sScalar.cs">
+		<Compile Update="Blake2s\Blake2sScalar.cs">
 			<DependentUpon>Blake2sScalar.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 		</Compile>
-		<Compile Update="Blake2sSse4.cs">
+		<Compile Update="Blake2s\Blake2sSse4.cs">
 			<DependentUpon>Blake2sSse4.tt</DependentUpon>
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
@@ -77,39 +77,39 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="Blake2b.tt">
+		<None Update="Blake2b\Blake2b.tt">
 			<LastGenOutput>Blake2b.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2bContext.tt">
+		<None Update="Blake2b\Blake2bContext.tt">
 			<LastGenOutput>Blake2bContext.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2bScalar.tt">
+		<None Update="Blake2b\Blake2bScalar.tt">
 			<LastGenOutput>Blake2bScalar.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2bSse4.tt">
+		<None Update="Blake2b\Blake2bSse4.tt">
 			<LastGenOutput>Blake2bSse4.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2bAvx2.tt">
+		<None Update="Blake2b\Blake2bAvx2.tt">
 			<LastGenOutput>Blake2bAvx2.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2s.tt">
+		<None Update="Blake2s\Blake2s.tt">
 			<LastGenOutput>Blake2s.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2sContext.tt">
+		<None Update="Blake2s\Blake2sContext.tt">
 			<LastGenOutput>Blake2sContext.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2sScalar.tt">
+		<None Update="Blake2s\Blake2sScalar.tt">
 			<LastGenOutput>Blake2sScalar.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="Blake2sSse4.tt">
+		<None Update="Blake2s\Blake2sSse4.tt">
 			<LastGenOutput>Blake2sSse4.cs</LastGenOutput>
 			<Generator>TextTemplatingFileGenerator</Generator>
 		</None>

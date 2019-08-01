@@ -1,4 +1,0 @@
-﻿<#@ template language="C#" #>
-<#@ output extension=".cs" #>
-<# var alg = b2b; #>
-<#@ include file="_Blake2Scalar.ttinclude" #><#@ include file="_Blake2Alg.ttinclude" #>

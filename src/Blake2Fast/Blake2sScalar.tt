@@ -1,4 +1,0 @@
-﻿<#@ template language="C#" debug="false" hostspecific="false" #>
-<#@ output extension=".cs" #>
-<# var alg = b2s; #>
-<#@ include file="_Blake2Scalar.ttinclude" #><#@ include file="_Blake2Alg.ttinclude" #>
