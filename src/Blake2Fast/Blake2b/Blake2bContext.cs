@@ -49,6 +49,8 @@ namespace Blake2Fast
 		};
 #endif
 
+		public int DigestLength => (int)outlen;
+
 		private void compress(ref byte input, uint offs, uint cb)
 		{
 			uint inc = Math.Min(cb, BlockBytes);
@@ -56,8 +58,10 @@ namespace Blake2Fast
 			fixed (byte* pinput = &input)
 			fixed (Blake2bContext* s = &this)
 			{
+				ulong* sh = s->h;
 				byte* pin = pinput + offs;
 				byte* end = pin + cb;
+
 				do
 				{
 					t[0] += inc;
@@ -68,14 +72,14 @@ namespace Blake2Fast
 #if HWINTRINSICS
 #if !HWINTRINSICS_EXP
 					if (Avx2.IsSupported)
-						mixAvx2(s->h, m);
+						mixAvx2(sh, m);
 					else
 #endif
 					if (Sse41.IsSupported)
-						mixSse41(s->h, m);
+						mixSse41(sh, m);
 					else
 #endif
-						mixScalar(s->h, m);
+						mixScalar(sh, m);
 
 					pin += inc;
 				} while (pin < end);
@@ -135,6 +139,35 @@ namespace Blake2Fast
 				Unsafe.CopyBlockUnaligned(ref b[c], ref Unsafe.Add(ref rinput, (int)consumed), remaining);
 				c += remaining;
 			}
+		}
+
+		public void Update<T>(ReadOnlySpan<T> input) where T : struct
+		{
+			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
+
+			Update(MemoryMarshal.AsBytes(input));
+		}
+
+		public void Update<T>(T input) where T : struct
+		{
+			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
+
+			if (Unsafe.SizeOf<T>() > BlockBytes - c)
+			{
+#if BUILTIN_SPAN
+				Update(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref input), Unsafe.SizeOf<T>()));
+#else
+				Span<byte> buff = stackalloc byte[Unsafe.SizeOf<T>()];
+				Unsafe.WriteUnaligned(ref buff[0], input);
+				Update(buff);
+#endif
+				return;
+			}
+
+			if (f[0] != 0) ThrowHelper.HashFinalized();
+
+			Unsafe.WriteUnaligned(ref b[c], input);
+			c += (uint)Unsafe.SizeOf<T>();
 		}
 
 		private void finish(Span<byte> hash)

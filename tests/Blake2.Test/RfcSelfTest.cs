@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 
 using Xunit;
-using SauceControl.Blake2Fast;
+using Blake2Fast;
 
 public class RfcSelfTest
 {
