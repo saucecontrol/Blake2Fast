@@ -37,7 +37,7 @@ public class RfcSelfTest
 		return buff;
 	}
 
-	private static bool blake2bSelfTest()
+	private static byte[] blake2bSelfTest()
 	{
 		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
 
@@ -51,10 +51,10 @@ public class RfcSelfTest
 			inc.Update(Blake2b.ComputeHash(diglen, key, msg));
 		}
 
-		return inc.Finish().SequenceEqual(blake2bCheck);
+		return inc.Finish();
 	}
 
-	private static bool blake2sSelfTest()
+	private static byte[] blake2sSelfTest()
 	{
 		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
 
@@ -68,10 +68,10 @@ public class RfcSelfTest
 			inc.Update(Blake2s.ComputeHash(diglen, key, msg));
 		}
 
-		return inc.Finish().SequenceEqual(blake2sCheck);
+		return inc.Finish();
 	}
 
-	private static bool blake2bNoAllocSelfTest()
+	private static byte[] blake2bNoAllocSelfTest()
 	{
 		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
 		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
@@ -89,10 +89,10 @@ public class RfcSelfTest
 			inc.Update(buff.Slice(0, diglen));
 		}
 
-		return inc.TryFinish(buff, out int len) && buff.Slice(0, len).SequenceEqual(blake2bCheck);
+		return inc.TryFinish(buff, out int len) ? buff.Slice(0, len).ToArray() : Array.Empty<byte>();
 	}
 
-	private static bool blake2sNoAllocSelfTest()
+	private static byte[] blake2sNoAllocSelfTest()
 	{
 		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
 		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
@@ -110,16 +110,12 @@ public class RfcSelfTest
 			inc.Update(buff.Slice(0, diglen));
 		}
 
-		return inc.TryFinish(buff, out int len) && buff.Slice(0, len).SequenceEqual(blake2sCheck);
+		return inc.TryFinish(buff, out int len) ? buff.Slice(0, len).ToArray() : Array.Empty<byte>();
 	}
 
-	private static bool blake2bHmacSelfTest()
+	private static byte[] blake2bHmacSelfTest()
 	{
-#if ICRYPTOTRANSFORM
 		using var inc = Blake2b.CreateHashAlgorithm(blake2bCheck.Length);
-#else
-		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
-#endif
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
 		{
@@ -130,33 +126,20 @@ public class RfcSelfTest
 			{
 				var msg = getTestSequence(msglen);
 
-#if ICRYPTOTRANSFORM
 				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
 				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
-#else
-				inc.Update(halg.ComputeHash(msg));
-				inc.Update(hmac.ComputeHash(msg));
-#endif
 			}
 		}
 
-#if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
-#else
-		var hash = inc.Finish();
-#endif
 
-		return hash.SequenceEqual(blake2bCheck);
+		return hash;
 	}
 
-	private static bool blake2sHmacSelfTest()
+	private static byte[] blake2sHmacSelfTest()
 	{
-#if ICRYPTOTRANSFORM
 		using var inc = Blake2s.CreateHashAlgorithm(blake2bCheck.Length);
-#else
-		var inc = Blake2s.CreateIncrementalHasher(blake2bCheck.Length);
-#endif
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
 		{
@@ -167,59 +150,56 @@ public class RfcSelfTest
 			{
 				var msg = getTestSequence(msglen);
 
-#if ICRYPTOTRANSFORM
 				inc.TransformBlock(halg.ComputeHash(msg), 0, diglen, null, 0);
 				inc.TransformBlock(hmac.ComputeHash(msg), 0, diglen, null, 0);
-#else
-				inc.Update(halg.ComputeHash(msg));
-				inc.Update(hmac.ComputeHash(msg));
-#endif
 			}
 		}
 
-#if ICRYPTOTRANSFORM
 		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 		var hash = inc.Hash;
-#else
-		var hash = inc.Finish();
-#endif
 
-		return hash.SequenceEqual(blake2sCheck);
+		return hash;
 	}
 
 	[Fact]
-	public void TestBlake2b()
+	public void RfcBlake2b()
 	{
-		Assert.True(blake2bSelfTest());
+		var hash = blake2bSelfTest();
+		Assert.True(hash.SequenceEqual(blake2bCheck));
 	}
 
 	[Fact]
-	public void TestBlake2s()
+	public void RfcBlake2s()
 	{
-		Assert.True(blake2sSelfTest());
+		var hash = blake2sSelfTest();
+		Assert.True(hash.SequenceEqual(blake2sCheck));
 	}
 
 	[Fact]
-	public void TestBlake2bNoAlloc()
+	public void RfcBlake2bNoAlloc()
 	{
-		Assert.True(blake2bNoAllocSelfTest());
+		var hash = blake2bNoAllocSelfTest();
+		Assert.True(hash.SequenceEqual(blake2bCheck));
 	}
 
 	[Fact]
-	public void TestBlake2sNoAlloc()
+	public void RfcBlake2sNoAlloc()
 	{
-		Assert.True(blake2sNoAllocSelfTest());
+		var hash = blake2sNoAllocSelfTest();
+		Assert.True(hash.SequenceEqual(blake2sCheck));
 	}
 
 	[Fact]
-	public void TestBlake2bHMAC()
+	public void RfcBlake2bHMAC()
 	{
-		Assert.True(blake2bHmacSelfTest());
+		var hash = blake2bHmacSelfTest();
+		Assert.True(hash.SequenceEqual(blake2bCheck));
 	}
 
 	[Fact]
-	public void TestBlake2sHMAC()
+	public void RfcBlake2sHMAC()
 	{
-		Assert.True(blake2sHmacSelfTest());
+		var hash = blake2sHmacSelfTest();
+		Assert.True(hash.SequenceEqual(blake2sCheck));
 	}
 }

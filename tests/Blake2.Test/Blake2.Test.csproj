@@ -1,25 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.0;netcoreapp2.1;netcoreapp1.0;net46</TargetFrameworks>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)'!='netcoreapp1.0'">
-		<DefineConstants>$(DefineConstants);ICRYPTOTRANSFORM</DefineConstants>
+		<TargetFrameworks>netcoreapp3.0;netcoreapp2.1;net46</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
+		<PackageReference Include="System.Json" Version="4.6.0" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
 		<PackageReference Include="xunit" Version="2.4.1" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-		</PackageReference>
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" PrivateAssets="all" />
 		<DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Blake2Fast\Blake2Fast.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="blake2-kat.json" />
 	</ItemGroup>
 
 </Project>
