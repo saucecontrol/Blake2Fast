@@ -7,14 +7,19 @@
 
 using System;
 
-#if USE_CRYPTOGRAPHY
+#if BLAKE2_CRYPTOGRAPHY
 using System.Security.Cryptography;
 #endif
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	/// <summary>Static helper methods for BLAKE2s hashing.</summary>
-	public static class Blake2s
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	static class Blake2s
 	{
 		/// <summary>The default hash digest length in bytes.  For BLAKE2s, this value is 32.</summary>
 		public const int DefaultDigestLength = Blake2sContext.HashBytes;
@@ -93,7 +98,7 @@ namespace SauceControl.Blake2Fast
 			return ctx;
 		}
 
-#if USE_CRYPTOGRAPHY
+#if BLAKE2_CRYPTOGRAPHY
 		/// <inheritdoc cref="CreateHashAlgorithm(int)" />
 		public static HashAlgorithm CreateHashAlgorithm() => CreateHashAlgorithm(DefaultDigestLength);
 

@@ -9,11 +9,11 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-#if USE_INTRINSICS
+#if HWINTRINSICS
 using System.Runtime.Intrinsics.X86;
 #endif
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	unsafe internal partial struct Blake2bContext : IBlake2Incremental
 	{
@@ -42,7 +42,7 @@ namespace SauceControl.Blake2Fast
 			0x79, 0x21, 0x7E, 0x13, 0x19, 0xCD, 0xE0, 0x5B
 		};
 
-#if USE_INTRINSICS
+#if HWINTRINSICS
 		private static ReadOnlySpan<byte> rormask => new byte[] {
 			3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
 			2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
@@ -65,8 +65,8 @@ namespace SauceControl.Blake2Fast
 						t[1]++;
 
 					ulong* m = (ulong*)pin;
-#if USE_INTRINSICS
-#if USE_AVX2
+#if HWINTRINSICS
+#if !HWINTRINSICS_EXP
 					if (Avx2.IsSupported)
 						mixAvx2(s->h, m);
 					else

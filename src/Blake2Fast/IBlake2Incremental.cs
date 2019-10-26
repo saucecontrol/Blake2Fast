@@ -1,10 +1,15 @@
 ﻿using System;
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	/// <summary>Defines an incremental BLAKE2 hashing operation.</summary>
 	/// <remarks>Allows the hash to be computed as portions of the message become available, rather than all at once.</remarks>
-	public interface IBlake2Incremental
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	interface IBlake2Incremental
 	{
 		/// <summary>Update the hash state with the message bytes contained in <paramref name="input" />.</summary>
 		/// <param name="input">The message bytes to add to the hash state.</param>

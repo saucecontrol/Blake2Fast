@@ -7,13 +7,13 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
-#if USE_INTRINSICS && USE_AVX2
+#if HWINTRINSICS && !HWINTRINSICS_EXP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	unsafe internal partial struct Blake2bContext
 	{
@@ -72,11 +72,11 @@ for (int i = 0; i < 12; i++) {
 #>
 			row1 = Avx2.Xor(row1, row3);
 			row2 = Avx2.Xor(row2, row4);
-			row1 = Avx2.Xor(row1, Avx2.LoadVector256(sh));
-			row2 = Avx2.Xor(row2, Avx2.LoadVector256(sh + Vector256<ulong>.Count));
+			row1 = Avx2.Xor(row1, Avx.LoadVector256(sh));
+			row2 = Avx2.Xor(row2, Avx.LoadVector256(sh + Vector256<ulong>.Count));
 
-			Avx2.Store(sh, row1);
-			Avx2.Store(sh + Vector256<ulong>.Count, row2);
+			Avx.Store(sh, row1);
+			Avx.Store(sh + Vector256<ulong>.Count, row2);
 		}
 	}
 }

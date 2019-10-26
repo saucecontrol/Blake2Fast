@@ -5,7 +5,7 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	unsafe internal partial struct Blake2sContext
 	{

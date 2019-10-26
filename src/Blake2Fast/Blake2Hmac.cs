@@ -1,8 +1,8 @@
-﻿#if USE_CRYPTOGRAPHY
+﻿#if BLAKE2_CRYPTOGRAPHY
 using System;
 using System.Security.Cryptography;
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	internal sealed class Blake2Hmac : HMAC
 	{
@@ -20,7 +20,6 @@ namespace SauceControl.Blake2Fast
 		private readonly Algorithm alg;
 		private IBlake2Incremental impl;
 
-#nullable disable // until the analyzer understands `Initialize()` sets `impl`
 		public Blake2Hmac(Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
 		{
 			alg = hashAlg;
@@ -34,9 +33,8 @@ namespace SauceControl.Blake2Fast
 				KeyValue = key.ToArray();
 #endif
 
-			Initialize();
+			impl = createIncrementalInstance();
 		}
-#nullable enable
 
 		public override byte[] Key
 		{
@@ -44,7 +42,19 @@ namespace SauceControl.Blake2Fast
 			set => throw new InvalidOperationException($"{nameof(Key)} cannot be changed.  You must create a new {nameof(HMAC)} instance.");
 		}
 
-		public sealed override void Initialize()
+		public sealed override void Initialize() => impl = createIncrementalInstance();
+
+		protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) => impl.Update(new ReadOnlySpan<byte>(array, ibStart, cbSize));
+
+		protected sealed override byte[] HashFinal() => impl.Finish();
+
+#if BUILTIN_SPAN
+		protected sealed override void HashCore(ReadOnlySpan<byte> source) => impl.Update(source);
+
+		protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) => impl.TryFinish(destination, out bytesWritten);
+#endif
+
+		private IBlake2Incremental createIncrementalInstance()
 		{
 #if NETSTANDARD1_3
 			var key = new ReadOnlySpan<byte>(base.Key);
@@ -52,20 +62,10 @@ namespace SauceControl.Blake2Fast
 			var key = new ReadOnlySpan<byte>(KeyValue);
 #endif
 
-			impl = alg == Algorithm.Blake2b ?
+			return alg == Algorithm.Blake2b ?
 				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
 				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
 		}
-
-		protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) => impl.Update(new ReadOnlySpan<byte>(array, ibStart, cbSize));
-
-		protected sealed override byte[] HashFinal() => impl.Finish();
-
-#if FAST_SPAN
-		protected sealed override void HashCore(ReadOnlySpan<byte> source) => impl.Update(source);
-
-		protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) => impl.TryFinish(destination, out bytesWritten);
-#endif
 	}
 }
 #endif

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SauceControl.Blake2Fast
+namespace Blake2Fast
 {
 	internal static class ThrowHelper
 	{
