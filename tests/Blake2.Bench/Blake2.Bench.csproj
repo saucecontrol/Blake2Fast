@@ -9,7 +9,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BenchmarkDotNet" Version="0.11.5" />
-		<PackageReference Include="ByteTerrace.Maths.Cryptography.Blake2" Version="0.0.4" />
+		<PackageReference Include="ByteTerrace.Maths.Cryptography.Blake2" Version="0.0.6" />
 		<PackageReference Include="Isopoh.Cryptography.Blake2b" Version="1.1.2" />
 		<PackageReference Include="Konscious.Security.Cryptography.Blake2" Version="1.0.9" />
 		<PackageReference Include="System.Data.HashFunction.Blake2" Version="2.0.0" />

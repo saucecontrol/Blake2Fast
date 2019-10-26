@@ -74,7 +74,7 @@ class ByPlatformByDataLengthOrderer : IOrderer
 	public string GetHighlightGroupKey(BenchmarkCase benchmark) => null;
 
 	public string GetLogicalGroupKey(ImmutableArray<BenchmarkCase> allBenchmarks, BenchmarkCase benchmark) =>
-		string.Join("-", benchmark.Job.Environment.Platform.ToString(), ((byte[])benchmark.Parameters.Items[0].Value).Length.ToString("X8"));
+		string.Join("-", benchmark.Job.Environment.Platform.ToString(), benchmark.Job.ToString(), ((byte[])benchmark.Parameters.Items[0].Value).Length.ToString("X8"));
 
 	public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups) =>
 		logicalGroups.OrderBy(lg => lg.Key);

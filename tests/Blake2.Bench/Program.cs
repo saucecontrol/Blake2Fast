@@ -19,11 +19,11 @@ static class BenchConfig
 {
 	public const int HashBytes = 5;
 	public static readonly byte[] Key = Array.Empty<byte>();
-	//public static readonly byte[] Key = new byte[] { (byte)'a', (byte)'b', (byte)'c' };
+	//public static readonly byte[] Key = new[] { (byte)'a', (byte)'b', (byte)'c' };
 
 	public static readonly List<byte[]> Data = new List<byte[]>
 	{
-		new byte[] { (byte)'a', (byte)'b', (byte)'c' },
+		new[] { (byte)'a', (byte)'b', (byte)'c' },
 		new byte[3268].RandomFill(), // size of Windows 10 srgb.icm
 		new byte[1024 * 1024 * 3].RandomFill()
 	};
@@ -104,7 +104,7 @@ class Program
 		Console.WriteLine(bench.GetHashBlake2sFast(BenchConfig.Data.Last()).ToHexString());
 
 		Console.WriteLine(bench.GetHash2snet(BenchConfig.Data.Last()).ToHexString());
-		//Console.WriteLine(bench.GetHashByteTerrace2s(BenchConfig.Data.Last()).ToHexString()); // disabled due to crashing bug
+		Console.WriteLine(bench.GetHashByteTerrace2s(BenchConfig.Data.Last()).ToHexString());
 	}
 }
 
@@ -234,7 +234,7 @@ public class Blake2Bench
 		return Blake2s.Blake2S.ComputeHash(data, cfg);
 	}
 
-	//[Benchmark(Description = "ByteTerrace"), BenchmarkCategory("Blake2s")] // disabled due to crashing bug
+	[Benchmark(Description = "ByteTerrace"), BenchmarkCategory("Blake2s")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashByteTerrace2s(byte[] data)
 	{
