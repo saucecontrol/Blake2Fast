@@ -1,0 +1,41 @@
+trigger:
+- master
+
+pool:
+  vmImage: windows-latest
+
+name: $(Year:yy)$(DayOfYear)$(Rev:r)
+steps:
+- task: UseDotNet@2
+  displayName: Ensure 3.0 SDK
+  inputs:
+    version: 3.0.x
+
+- task: UseDotNet@2
+  displayName: Ensure 2.1 Runtime
+  inputs:
+    packageType: runtime
+    version: 2.1.x
+    performMultiLevelLookup: true
+
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: build
+    projects: 'src/**/*.csproj'
+    arguments: '-c Dist --version-suffix preview$(Build.BuildNumber)'
+
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: 'tests/*.Test/*.csproj'
+    arguments: '-c Release'
+
+- task: DotNetCoreCLI@2
+  displayName: Push
+  inputs:
+    command: push
+    packagesToPush: 'out/bin/**/*.nupkg'
+    nuGetFeedType: internal
+    publishVstsFeed: 223195a1-0c57-4ba7-a9bf-c1f891690877/8b69f87a-bc99-4761-abd9-17a352d1441f
