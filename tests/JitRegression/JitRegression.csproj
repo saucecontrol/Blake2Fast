@@ -3,9 +3,10 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PlatformTarget>AnyCPU</PlatformTarget>
-		<TargetFrameworks>netcoreapp3.0;netcoreapp2.1;netcoreapp2.0;netcoreapp1.1</TargetFrameworks>
+		<TargetFrameworks>netcoreapp3.1;netcoreapp2.1;netcoreapp2.0;netcoreapp1.1</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<TieredCompilation>false</TieredCompilation>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -15,7 +16,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BenchmarkDotNet" Version="0.10.14" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
 	</ItemGroup>
 
 </Project>

@@ -1,23 +1,9 @@
 <Project>
 
+	<Import Project="$(MSBuildThisFileDirectory)..\build\Common.props" />
+
 	<PropertyGroup>
-		<LangVersion>8</LangVersion>
-		<Features>strict</Features>
-		<Nullable>annotations</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-		<Configuration Condition="'$(Configuration)'==''">Release</Configuration>
-		<BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\out\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-		<BaseOutputPath>$(MSBuildThisFileDirectory)..\out\bin\$(MSBuildProjectName)\</BaseOutputPath>
-		<IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
-		<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
-		<OutDir>$(OutputPath)$(TargetFramework)\</OutDir>
-		<AssemblyInfoFile>$(IntermediateOutputPath)$(TargetFramework)\_AssemblyInfo.cs</AssemblyInfoFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<DebugType>pdbonly</DebugType>
-		<DebugSymbols>true</DebugSymbols>
+		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	</PropertyGroup>
 
 </Project>

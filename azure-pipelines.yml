@@ -6,10 +6,13 @@ pool:
 
 name: $(Year:yy)$(DayOfYear)$(Rev:r)
 steps:
+- task: NuGetAuthenticate@0
+  condition: ne(variables['Build.Reason'], 'PullRequest')
+
 - task: UseDotNet@2
-  displayName: Ensure 3.0 SDK
+  displayName: Ensure 3.1 SDK
   inputs:
-    version: 3.0.x
+    version: 3.1.x
 
 - task: UseDotNet@2
   displayName: Ensure 2.1 Runtime
@@ -18,24 +21,22 @@ steps:
     version: 2.1.x
     performMultiLevelLookup: true
 
-- task: DotNetCoreCLI@2
+- script: dotnet build src\Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
   displayName: Build
-  inputs:
-    command: build
-    projects: 'src/**/*.csproj'
-    arguments: '-c Dist --version-suffix preview$(Build.BuildNumber)'
 
-- task: DotNetCoreCLI@2
+- script: dotnet test tests\Blake2.Test -c Release -s tests\runsettings --logger trx
   displayName: Test
-  inputs:
-    command: test
-    projects: 'tests/*.Test/*.csproj'
-    arguments: '-c Release'
 
-- task: DotNetCoreCLI@2
+- script: dotnet test tests\Blake2.Test -c Release -f netcoreapp3.0 -s tests\runsettings --logger trx
+  displayName: Test - No AVX
+  env:
+    COMPlus_EnableAVX: 0
+
+- script: dotnet nuget push --api-key AzureArtifacts --source https://pkgs.dev.azure.com/saucecontrol/Blake2Fast/_packaging/blake2fast_ci/nuget/v3/index.json out\bin\Blake2Fast\Dist\SauceControl.Blake2Fast.*.nupkg
   displayName: Push
+  condition: ne(variables['Build.Reason'], 'PullRequest')
+
+- task: PublishTestResults@2
   inputs:
-    command: push
-    packagesToPush: 'out/bin/**/*.nupkg'
-    nuGetFeedType: internal
-    publishVstsFeed: 223195a1-0c57-4ba7-a9bf-c1f891690877/8b69f87a-bc99-4761-abd9-17a352d1441f
+    testRunner: VSTest
+    testResultsFiles: out\testresults\*.trx

@@ -1,0 +1,54 @@
+<Project>
+
+	<PropertyGroup>
+		<Owners>SauceControl</Owners>
+		<Authors>Clinton Ingram</Authors>
+		<RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
+		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
+		<Title>High-Performance BLAKE2 Hashing for .NET</Title>
+		<Description>Optimized implementations of the BLAKE2b and BLAKE2s cryptographic hashing algorithms. Uses SSE2-SSE4.1 Hardware Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3+</Description>
+
+		<RootNamespace>$(MSBuildProjectName)</RootNamespace>
+		<AssemblyName>$(Owners).$(MSBuildProjectName)</AssemblyName>
+		<AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
+		<Product>$(MSBuildProjectName)</Product>
+
+		<PackageIcon>package/$(Owners).png</PackageIcon>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC Cryptography</PackageTags>
+		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
+
+		<LangVersion>8</LangVersion>
+		<Features>strict</Features>
+		<Nullable>annotations</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+		<Configurations>Debug;Release;Dist</Configurations>
+		<Configuration Condition="'$(Configuration)'==''">Release</Configuration>
+
+		<RepositoryRoot>$(MSBuildThisFileDirectory)..\</RepositoryRoot>
+		<BaseIntermediateOutputPath>$(RepositoryRoot)out\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+		<BaseOutputPath>$(RepositoryRoot)out\bin\$(MSBuildProjectName)\</BaseOutputPath>
+		<IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+		<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+		<IntDir>$(IntermediateOutputPath)$(TargetFramework)\</IntDir>
+		<OutDir>$(OutputPath)$(TargetFramework)\</OutDir>
+
+		<AssemblyInfoFile>$(IntDir)_AssemblyInfo.cs</AssemblyInfoFile>
+		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)$(Owners).snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'!='Debug'">
+		<Deterministic>true</Deterministic>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)'=='Dist' Or '$(Configuration)'=='Coverage'">
+		<None Include="$(MSBuildThisFileDirectory)$(Owners).png" Pack="true" PackagePath="package" />
+		<SourceRoot Include="$(RepositoryRoot)" />
+	</ItemGroup>
+
+</Project>
