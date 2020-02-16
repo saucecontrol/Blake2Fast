@@ -12,6 +12,8 @@ using System;
 using System.Security.Cryptography;
 #endif
 
+using Blake2Fast.Implementation;
+
 namespace Blake2Fast
 {
 	/// <summary>Static helper methods for BLAKE2<#= alg.suffix #> hashing.</summary>
@@ -23,7 +25,7 @@ namespace Blake2Fast
 	static class Blake2<#= alg.suffix #>
 	{
 		/// <summary>The default hash digest length in bytes.  For BLAKE2<#= alg.suffix #>, this value is <#= alg.bits #>.</summary>
-		public const int DefaultDigestLength = Blake2<#= alg.suffix #>Context.HashBytes;
+		public const int DefaultDigestLength = Blake2<#= alg.suffix #>HashState.HashBytes;
 
 		/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 		public static byte[] ComputeHash(ReadOnlySpan<byte> input) => ComputeHash(DefaultDigestLength, default, input);
@@ -42,10 +44,10 @@ namespace Blake2Fast
 		/// <returns>The computed hash digest from the message bytes in <paramref name="input" />.</returns>
 		public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input)
 		{
-			var ctx = default(Blake2<#= alg.suffix #>Context);
-			ctx.Init(digestLength, key);
-			ctx.Update(input);
-			return ctx.Finish();
+			var hs = default(Blake2<#= alg.suffix #>HashState);
+			hs.Init(digestLength, key);
+			hs.Update(input);
+			return hs.Finish();
 		}
 
 		/// <inheritdoc cref="ComputeAndWriteHash(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
@@ -69,31 +71,31 @@ namespace Blake2Fast
 			if (output.Length < digestLength)
 				throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(output));
 
-			var ctx = default(Blake2<#= alg.suffix #>Context);
-			ctx.Init(digestLength, key);
-			ctx.Update(input);
-			ctx.TryFinish(output, out int _);
+			var hs = default(Blake2<#= alg.suffix #>HashState);
+			hs.Init(digestLength, key);
+			hs.Update(input);
+			hs.Finish(output);
 		}
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
+		public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
+		public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
+		public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
 
 		/// <summary>Create and initialize an incremental BLAKE2<#= alg.suffix #> hash computation.</summary>
 		/// <remarks>If you will receive the input in segments rather than all at once, this is the most efficient way to calculate the hash.</remarks>
 		/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 		/// <param name="key">0 to <#= alg.bits #> bytes of input for initializing a keyed hash.</param>
-		/// <returns>An <see cref="IBlake2Incremental" /> interface for updating and finalizing the hash.</returns>
-		public static IBlake2Incremental CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
+		/// <returns>An <see cref="Blake2<#= alg.suffix #>HashState" /> instance for updating and finalizing the hash.</returns>
+		public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
 		{
-			var ctx = default(Blake2<#= alg.suffix #>Context);
-			ctx.Init(digestLength, key);
-			return ctx;
+			var hs = default(Blake2<#= alg.suffix #>HashState);
+			hs.Init(digestLength, key);
+			return hs;
 		}
 
 #if BLAKE2_CRYPTOGRAPHY

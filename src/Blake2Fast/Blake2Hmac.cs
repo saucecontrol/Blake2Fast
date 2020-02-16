@@ -63,8 +63,8 @@ namespace Blake2Fast
 #endif
 
 			return alg == Algorithm.Blake2b ?
-				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
-				Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
+				(IBlake2Incremental)Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
+				(IBlake2Incremental)Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
 		}
 	}
 }

@@ -1,7 +1,19 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace Blake2Fast
 {
+#if BLAKE2_PUBLIC
+	namespace Implementation
+	{
+		/// <summary>
+		///   Contains BLAKE2 hash state implementation structs.  Use the <c>CreateIncrementalHasher</c> factory methods
+		///   to create and initialize the state structs.  The state structs will not be usable if created directly.
+		/// </summary>
+		[CompilerGenerated] internal class NamespaceDoc { }
+	}
+#endif
+
 	/// <summary>Defines an incremental BLAKE2 hashing operation.</summary>
 	/// <remarks>Allows the hash to be computed as portions of the message become available, rather than all at once.</remarks>
 #if BLAKE2_PUBLIC
@@ -34,6 +46,9 @@ namespace Blake2Fast
 		/// <summary>Finalize the hash, and return the computed digest.</summary>
 		/// <returns>The computed hash digest.</returns>
 		byte[] Finish();
+
+		/// <inheritdoc cref="TryFinish(Span{byte}, out int)" />
+		void Finish(Span<byte> output);
 
 		/// <summary>Finalize the hash, and copy the computed digest to <paramref name="output" />.</summary>
 		/// <param name="output">The buffer into which the hash digest should be written.  The buffer must have a capacity of at least <see cref="DigestLength" /> bytes for the method to succeed.</param>

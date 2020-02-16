@@ -12,6 +12,8 @@ using System;
 using System.Security.Cryptography;
 #endif
 
+using Blake2Fast.Implementation;
+
 namespace Blake2Fast
 {
 	/// <summary>Static helper methods for BLAKE2s hashing.</summary>
@@ -23,7 +25,7 @@ namespace Blake2Fast
 	static class Blake2s
 	{
 		/// <summary>The default hash digest length in bytes.  For BLAKE2s, this value is 32.</summary>
-		public const int DefaultDigestLength = Blake2sContext.HashBytes;
+		public const int DefaultDigestLength = Blake2sHashState.HashBytes;
 
 		/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 		public static byte[] ComputeHash(ReadOnlySpan<byte> input) => ComputeHash(DefaultDigestLength, default, input);
@@ -42,10 +44,10 @@ namespace Blake2Fast
 		/// <returns>The computed hash digest from the message bytes in <paramref name="input" />.</returns>
 		public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input)
 		{
-			var ctx = default(Blake2sContext);
-			ctx.Init(digestLength, key);
-			ctx.Update(input);
-			return ctx.Finish();
+			var hs = default(Blake2sHashState);
+			hs.Init(digestLength, key);
+			hs.Update(input);
+			return hs.Finish();
 		}
 
 		/// <inheritdoc cref="ComputeAndWriteHash(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
@@ -69,31 +71,31 @@ namespace Blake2Fast
 			if (output.Length < digestLength)
 				throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(output));
 
-			var ctx = default(Blake2sContext);
-			ctx.Init(digestLength, key);
-			ctx.Update(input);
-			ctx.TryFinish(output, out int _);
+			var hs = default(Blake2sHashState);
+			hs.Init(digestLength, key);
+			hs.Update(input);
+			hs.Finish(output);
 		}
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
+		public static Blake2sHashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
+		public static Blake2sHashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
 
 		/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-		public static IBlake2Incremental CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
+		public static Blake2sHashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
 
 		/// <summary>Create and initialize an incremental BLAKE2s hash computation.</summary>
 		/// <remarks>If you will receive the input in segments rather than all at once, this is the most efficient way to calculate the hash.</remarks>
 		/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 32.</param>
 		/// <param name="key">0 to 32 bytes of input for initializing a keyed hash.</param>
-		/// <returns>An <see cref="IBlake2Incremental" /> interface for updating and finalizing the hash.</returns>
-		public static IBlake2Incremental CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
+		/// <returns>An <see cref="Blake2sHashState" /> instance for updating and finalizing the hash.</returns>
+		public static Blake2sHashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
 		{
-			var ctx = default(Blake2sContext);
-			ctx.Init(digestLength, key);
-			return ctx;
+			var hs = default(Blake2sHashState);
+			hs.Init(digestLength, key);
+			return hs;
 		}
 
 #if BLAKE2_CRYPTOGRAPHY

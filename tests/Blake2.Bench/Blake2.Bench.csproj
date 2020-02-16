@@ -16,7 +16,7 @@
 		<PackageReference Include="blake2s-net" Version="0.1.0" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)'!='net472'">
+	<ItemGroup Condition="$(TargetFramework.StartsWith('netcore'))">
 		<PackageReference Include="Blake2Core" Version="1.0.0" />
 		<PackageReference Include="libsodium" Version="1.0.17.1" />
 		<PackageReference Include="NSec.Cryptography" Version="19.5.0" />

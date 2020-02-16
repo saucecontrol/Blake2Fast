@@ -11,9 +11,14 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-namespace Blake2Fast
+namespace Blake2Fast.Implementation
 {
-	unsafe internal partial struct Blake2bContext
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	unsafe partial struct Blake2bHashState
 	{
 		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]

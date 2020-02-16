@@ -13,16 +13,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 #endif
 
-namespace Blake2Fast
+namespace Blake2Fast.Implementation
 {
-	unsafe internal partial struct Blake2bContext : IBlake2Incremental
+	/// <summary>Defines the state associated with an incremental BLAKE2b hashing operation.</summary>
+	/// <remarks>Instances of this struct must be created by <see cref="Blake2b.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	unsafe partial struct Blake2bHashState : IBlake2Incremental
 	{
-		public const int WordSize = sizeof(ulong);
-		public const int BlockWords = 16;
-		public const int BlockBytes = BlockWords * WordSize;
-		public const int HashWords = 8;
-		public const int HashBytes = HashWords * WordSize;
-		public const int MaxKeyBytes = HashBytes;
+		internal const int WordSize = sizeof(ulong);
+		internal const int BlockWords = 16;
+		internal const int BlockBytes = BlockWords * WordSize;
+		internal const int HashWords = 8;
+		internal const int HashBytes = HashWords * WordSize;
+		internal const int MaxKeyBytes = HashBytes;
 
 		private fixed byte b[BlockBytes];
 		private fixed ulong h[HashWords];
@@ -49,6 +56,7 @@ namespace Blake2Fast
 		};
 #endif
 
+		/// <inheritdoc />
 		public int DigestLength => (int)outlen;
 
 		private void compress(ref byte input, uint offs, uint cb)
@@ -56,7 +64,7 @@ namespace Blake2Fast
 			uint inc = Math.Min(cb, BlockBytes);
 
 			fixed (byte* pinput = &input)
-			fixed (Blake2bContext* s = &this)
+			fixed (Blake2bHashState* s = &this)
 			{
 				ulong* sh = s->h;
 				byte* pin = pinput + offs;
@@ -86,7 +94,7 @@ namespace Blake2Fast
 			}
 		}
 
-		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
+		internal void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
 		{
 			uint keylen = (uint)key.Length;
 
@@ -106,8 +114,10 @@ namespace Blake2Fast
 			}
 		}
 
+		/// <inheritdoc />
 		public void Update(ReadOnlySpan<byte> input)
 		{
+			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
 			uint consumed = 0;
@@ -141,6 +151,7 @@ namespace Blake2Fast
 			}
 		}
 
+		/// <inheritdoc />
 		public void Update<T>(ReadOnlySpan<T> input) where T : struct
 		{
 			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
@@ -148,6 +159,7 @@ namespace Blake2Fast
 			Update(MemoryMarshal.AsBytes(input));
 		}
 
+		/// <inheritdoc />
 		public void Update<T>(T input) where T : struct
 		{
 			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
@@ -172,6 +184,7 @@ namespace Blake2Fast
 
 		private void finish(Span<byte> hash)
 		{
+			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
 			if (c < BlockBytes)
@@ -183,6 +196,7 @@ namespace Blake2Fast
 			Unsafe.CopyBlockUnaligned(ref hash[0], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
 		}
 
+		/// <inheritdoc />
 		public byte[] Finish()
 		{
 			byte[] hash = new byte[outlen];
@@ -191,6 +205,15 @@ namespace Blake2Fast
 			return hash;
 		}
 
+		/// <inheritdoc />
+		public void Finish(Span<byte> output)
+		{
+			if ((uint)output.Length < outlen) ThrowHelper.OutputTooSmall(DigestLength);
+
+			finish(output);
+		}
+
+		/// <inheritdoc />
 		public bool TryFinish(Span<byte> output, out int bytesWritten)
 		{
 			if ((uint)output.Length < outlen)

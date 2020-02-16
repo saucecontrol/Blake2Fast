@@ -7,9 +7,14 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Blake2Fast
+namespace Blake2Fast.Implementation
 {
-	unsafe internal partial struct Blake2<#= alg.suffix #>Context
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	unsafe partial struct Blake2<#= alg.suffix #>HashState
 	{
 		private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
 		{

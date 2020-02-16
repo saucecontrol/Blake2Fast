@@ -5,9 +5,14 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Blake2Fast
+namespace Blake2Fast.Implementation
 {
-	unsafe internal partial struct Blake2bContext
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	unsafe partial struct Blake2bHashState
 	{
 		private static void mixScalar(ulong* sh, ulong* m)
 		{

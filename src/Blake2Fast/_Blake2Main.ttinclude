@@ -13,19 +13,26 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 #endif
 
-namespace Blake2Fast
+namespace Blake2Fast.Implementation
 {
-	unsafe internal partial struct Blake2<#= alg.suffix #>Context : IBlake2Incremental
+	/// <summary>Defines the state associated with an incremental BLAKE2<#= alg.suffix #> hashing operation.</summary>
+	/// <remarks>Instances of this struct must be created by <see cref="Blake2<#= alg.suffix #>.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
+#if BLAKE2_PUBLIC
+	public
+#else
+	internal
+#endif
+	unsafe partial struct Blake2<#= alg.suffix #>HashState : IBlake2Incremental
 	{
-		public const int WordSize = sizeof(<#= alg.wtype #>);
-		public const int BlockWords = 16;
-		public const int BlockBytes = BlockWords * WordSize;
-		public const int HashWords = 8;
-		public const int HashBytes = HashWords * WordSize;
-		public const int MaxKeyBytes = HashBytes;
+		internal const int WordSize = sizeof(<#= alg.wtype #>);
+		internal const int BlockWords = 16;
+		internal const int BlockBytes = BlockWords * WordSize;
+		internal const int HashWords = 8;
+		internal const int HashBytes = HashWords * WordSize;
+		internal const int MaxKeyBytes = HashBytes;
 <#
-		//public const int SaltBytes = 2 * WordSize;
-		//public const int PersonalizationBytes = 2 * WordSize;
+		//internal const int SaltBytes = 2 * WordSize;
+		//internal const int PersonalizationBytes = 2 * WordSize;
 #>
 
 <#
@@ -76,6 +83,7 @@ if (alg.bits == 64) {
 		};
 #endif
 
+		/// <inheritdoc />
 		public int DigestLength => (int)outlen;
 
 		private void compress(ref byte input, uint offs, uint cb)
@@ -83,7 +91,7 @@ if (alg.bits == 64) {
 			uint inc = Math.Min(cb, BlockBytes);
 
 			fixed (byte* pinput = &input)
-			fixed (Blake2<#= alg.suffix #>Context* s = &this)
+			fixed (Blake2<#= alg.suffix #>HashState* s = &this)
 			{
 				<#= alg.wtype #>* sh = s->h;
 				byte* pin = pinput + offs;
@@ -132,7 +140,7 @@ if (alg.bits == 64) {
 			}
 		}
 
-		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
+		internal void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
 		{
 			uint keylen = (uint)key.Length;
 
@@ -181,8 +189,10 @@ if (alg.bits == 64) {
 			}
 		}
 
+		/// <inheritdoc />
 		public void Update(ReadOnlySpan<byte> input)
 		{
+			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
 			uint consumed = 0;
@@ -216,6 +226,7 @@ if (alg.bits == 64) {
 			}
 		}
 
+		/// <inheritdoc />
 		public void Update<T>(ReadOnlySpan<T> input) where T : struct
 		{
 			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
@@ -223,6 +234,7 @@ if (alg.bits == 64) {
 			Update(MemoryMarshal.AsBytes(input));
 		}
 
+		/// <inheritdoc />
 		public void Update<T>(T input) where T : struct
 		{
 			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
@@ -247,6 +259,7 @@ if (alg.bits == 64) {
 
 		private void finish(Span<byte> hash)
 		{
+			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
 			if (c < BlockBytes)
@@ -270,6 +283,7 @@ if (alg.bits == 64) {
 			Unsafe.CopyBlockUnaligned(ref hash[0], ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), outlen);
 		}
 
+		/// <inheritdoc />
 		public byte[] Finish()
 		{
 			byte[] hash = new byte[outlen];
@@ -278,6 +292,15 @@ if (alg.bits == 64) {
 			return hash;
 		}
 
+		/// <inheritdoc />
+		public void Finish(Span<byte> output)
+		{
+			if ((uint)output.Length < outlen) ThrowHelper.OutputTooSmall(DigestLength);
+
+			finish(output);
+		}
+
+		/// <inheritdoc />
 		public bool TryFinish(Span<byte> output, out int bytesWritten)
 		{
 			if ((uint)output.Length < outlen)
