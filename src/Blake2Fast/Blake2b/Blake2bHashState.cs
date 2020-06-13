@@ -114,8 +114,7 @@ namespace Blake2Fast.Implementation
 			}
 		}
 
-		/// <inheritdoc />
-		public void Update(ReadOnlySpan<byte> input)
+		private void update(ReadOnlySpan<byte> input)
 		{
 			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
@@ -156,8 +155,17 @@ namespace Blake2Fast.Implementation
 		{
 			ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
 
-			Update(MemoryMarshal.AsBytes(input));
+			update(MemoryMarshal.AsBytes(input));
 		}
+
+		/// <inheritdoc />
+		public void Update<T>(Span<T> input) where T : struct => Update((ReadOnlySpan<T>)input);
+
+		/// <inheritdoc />
+		public void Update<T>(ArraySegment<T> input) where T : struct => Update((ReadOnlySpan<T>)input);
+
+		/// <inheritdoc />
+		public void Update<T>(T[] input) where T : struct => Update((ReadOnlySpan<T>)input);
 
 		/// <inheritdoc />
 		public void Update<T>(T input) where T : struct
@@ -169,9 +177,9 @@ namespace Blake2Fast.Implementation
 #if BUILTIN_SPAN
 				Update(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref input), Unsafe.SizeOf<T>()));
 #else
-				Span<byte> buff = stackalloc byte[Unsafe.SizeOf<T>()];
+				var buff = (Span<byte>)stackalloc byte[Unsafe.SizeOf<T>()];
 				Unsafe.WriteUnaligned(ref buff[0], input);
-				Update(buff);
+				update(buff);
 #endif
 				return;
 			}

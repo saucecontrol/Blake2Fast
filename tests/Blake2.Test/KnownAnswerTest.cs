@@ -38,21 +38,21 @@ public struct KatEntry
 
 	private static int getDigit(char c) => c < 'a' ? c - '0' : c - 'a' + 10;
 
-	private static KatEntry[] getAllKat()
+	private static KatEntry[] getKatValues()
 	{
-		using var stm = typeof(KnownAnswerTest).Assembly.GetManifestResourceStream("Blake2.Test.blake2-kat.json");
+		using var stm = typeof(KatEntry).Assembly.GetManifestResourceStream("Blake2.Test.blake2-kat.json");
 		return ((JsonArray)JsonValue.Load(stm)).Cast<JsonObject>().Select(o => new KatEntry(o)).ToArray();
 	}
 
-	public static readonly KatEntry[] All = getAllKat();
+	public static readonly KatEntry[] Values = getKatValues();
 
-	public static IEnumerable<object[]> Blake2b => All.Where(k => k.Alg == "blake2b" && k.Key.Length == 0).Select(k => new object[] { k });
+	public static IEnumerable<object[]> Blake2b => Values.Where(k => k.Alg == "blake2b" && k.Key.Length == 0).Select(k => new object[] { k });
 
-	public static IEnumerable<object[]> Blake2bKeyed => All.Where(k => k.Alg == "blake2b" && k.Key.Length != 0).Select(k => new object[] { k });
+	public static IEnumerable<object[]> Blake2bKeyed => Values.Where(k => k.Alg == "blake2b" && k.Key.Length != 0).Select(k => new object[] { k });
 
-	public static IEnumerable<object[]> Blake2s => All.Where(k => k.Alg == "blake2s" && k.Key.Length == 0).Select(k => new object[] { k });
+	public static IEnumerable<object[]> Blake2s => Values.Where(k => k.Alg == "blake2s" && k.Key.Length == 0).Select(k => new object[] { k });
 
-	public static IEnumerable<object[]> Blake2sKeyed => All.Where(k => k.Alg == "blake2s" && k.Key.Length != 0).Select(k => new object[] { k });
+	public static IEnumerable<object[]> Blake2sKeyed => Values.Where(k => k.Alg == "blake2s" && k.Key.Length != 0).Select(k => new object[] { k });
 }
 
 public class KnownAnswerTest
@@ -139,12 +139,12 @@ public class KnownAnswerTest
 	[Fact]
 	public void UpdateThrowsOnRefContainingT()
 	{
-		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(KatEntry.All[0]));
+		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(KatEntry.Values.First()));
 	}
 
 	[Fact]
 	public void UpdateThrowsOnRefContainingSpanT()
 	{
-		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(new ReadOnlySpan<KatEntry>(KatEntry.All)));
+		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(KatEntry.Values));
 	}
 }
