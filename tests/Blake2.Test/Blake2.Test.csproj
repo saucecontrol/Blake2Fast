@@ -5,8 +5,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Json" Version="4.7.0" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
+		<PackageReference Include="System.Json" Version="4.7.1" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.1" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
 		<PackageReference Include="xunit" Version="2.4.1" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" PrivateAssets="all" />

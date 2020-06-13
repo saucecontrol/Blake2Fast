@@ -3,8 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Filters;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Attributes;
@@ -61,16 +59,16 @@ class Program
 				singleRun();
 				break;
 			case ConsoleKey.D1:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).With(new AllCategoriesFilter(new[] { "OtherHash" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).AddFilter(new AllCategoriesFilter(new[] { "OtherHash" })));
 				break;
 			case ConsoleKey.D2:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new AllCategoriesFilter(new[] { "Blake2b" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter(new[] { "Blake2b" })));
 				break;
 			case ConsoleKey.D3:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().With(new AllCategoriesFilter(new[] { "Blake2s" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter(new[] { "Blake2s" })));
 				break;
 			case ConsoleKey.D4:
-				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().With(new AllCategoriesFilter(new[] { "JitTest" })));
+				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter(new[] { "JitTest" })));
 				break;
 			default:
 				Console.WriteLine("Unrecognized command.");

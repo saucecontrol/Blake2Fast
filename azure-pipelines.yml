@@ -6,13 +6,11 @@ pool:
 
 name: $(Year:yy)$(DayOfYear)$(Rev:r)
 steps:
-- task: NuGetAuthenticate@0
-  condition: ne(variables['Build.Reason'], 'PullRequest')
-
 - task: UseDotNet@2
   displayName: Ensure 3.1 SDK
   inputs:
     version: 3.1.x
+    performMultiLevelLookup: true
 
 - task: UseDotNet@2
   displayName: Ensure 2.1 Runtime
@@ -31,6 +29,9 @@ steps:
   displayName: Test - No AVX
   env:
     COMPlus_EnableAVX: 0
+
+- task: NuGetAuthenticate@0
+  condition: ne(variables['Build.Reason'], 'PullRequest')
 
 - script: dotnet nuget push --api-key AzureArtifacts --source https://pkgs.dev.azure.com/saucecontrol/Blake2Fast/_packaging/blake2fast_ci/nuget/v3/index.json out\bin\Blake2Fast\Dist\SauceControl.Blake2Fast.*.nupkg
   displayName: Push
