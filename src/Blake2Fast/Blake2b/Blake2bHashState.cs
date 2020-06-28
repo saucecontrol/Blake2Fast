@@ -94,13 +94,20 @@ namespace Blake2Fast.Implementation
 			}
 		}
 
-		internal void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
+		public void Init(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
 		{
 			uint keylen = (uint)key.Length;
 
 			if (!BitConverter.IsLittleEndian) ThrowHelper.NoBigEndian();
 			if (digestLength == 0 || (uint)digestLength > HashBytes) ThrowHelper.DigestInvalidLength(HashBytes);
 			if (keylen > MaxKeyBytes) ThrowHelper.KeyTooLong(MaxKeyBytes);
+
+			UnsafeInit(digestLength, key);
+		}
+		
+		public void UnsafeInit(int digestLength = HashBytes, ReadOnlySpan<byte> key = default)
+		{
+			uint keylen = (uint)key.Length;
 
 			outlen = (uint)digestLength;
 
@@ -119,6 +126,11 @@ namespace Blake2Fast.Implementation
 			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
+			UnsafeUpdate(input);
+		}
+		
+		public void UnsafeUpdate(ReadOnlySpan<byte> input)
+		{
 			uint consumed = 0;
 			uint remaining = (uint)input.Length;
 			ref byte rinput = ref MemoryMarshal.GetReference(input);
@@ -195,6 +207,11 @@ namespace Blake2Fast.Implementation
 			if (outlen == 0) ThrowHelper.HashNotInitialized();
 			if (f[0] != 0) ThrowHelper.HashFinalized();
 
+			UnsafeFinish(hash);
+		}
+		
+		public void UnsafeFinish(Span<byte> hash)
+		{
 			if (c < BlockBytes)
 				Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
