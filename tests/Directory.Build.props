@@ -6,4 +6,17 @@
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)'=='Coverage'">
+		<CollectCoverage>true</CollectCoverage>
+		<UseSourceLink>true</UseSourceLink>
+		<CoverletOutputFormat>opencover</CoverletOutputFormat>
+		<CoverletOutput>$(MSBuildThisFileDirectory)..\out\coverage\opencover$(CoverageFileSuffix).xml</CoverletOutput>
+		<Exclude>[$(AssemblyName)]</Exclude>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)'=='Coverage'">
+		<PackageReference Include="coverlet.collector" Version="3.0.2" PrivateAssets="all" />
+		<PackageReference Include="coverlet.msbuild" Version="3.0.2" PrivateAssets="all" />
+	</ItemGroup>
+
 </Project>

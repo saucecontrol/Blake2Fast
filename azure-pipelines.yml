@@ -4,12 +4,15 @@ trigger:
 pool:
   vmImage: windows-latest
 
+variables:
+  disable.coverage.autogenerate: true
+
 name: $(Year:yy)$(DayOfYear)$(Rev:r)
 steps:
 - task: UseDotNet@2
-  displayName: Ensure 3.1 SDK
+  displayName: Ensure 5.0 SDK
   inputs:
-    version: 3.1.x
+    version: 5.0.x
     performMultiLevelLookup: true
 
 - task: UseDotNet@2
@@ -19,16 +22,30 @@ steps:
     version: 2.1.x
     performMultiLevelLookup: true
 
+- task: UseDotNet@2
+  displayName: Ensure 3.1 Runtime
+  inputs:
+    packageType: runtime
+    version: 3.1.x
+    performMultiLevelLookup: true
+
 - script: dotnet build src\Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
   displayName: Build
 
-- script: dotnet test tests\Blake2.Test -c Release -s tests\runsettings --logger trx
+- script: dotnet test tests\Blake2.Test -c Coverage -s tests\runsettings --logger trx --collect "XPlat Code Coverage"
   displayName: Test
 
-- script: dotnet test tests\Blake2.Test -c Release -f netcoreapp3.0 -s tests\runsettings --logger trx
+- script: dotnet test tests\Blake2.Test -c Coverage -f netcoreapp3.0 -s tests\runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
   displayName: Test - No AVX
   env:
     COMPlus_EnableAVX: 0
+
+- task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@4
+  displayName: Coverage Reports
+  inputs:
+    reports: out\coverage\opencover*.xml
+    targetdir: out\coverage\reports
+    reporttypes: HtmlInline_AzurePipelines;Cobertura;Badges
 
 - task: NuGetAuthenticate@0
   condition: ne(variables['Build.Reason'], 'PullRequest')
@@ -41,3 +58,9 @@ steps:
   inputs:
     testRunner: VSTest
     testResultsFiles: out\testresults\*.trx
+
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: out\coverage\reports\cobertura.xml
+    reportDirectory: out\coverage\reports
