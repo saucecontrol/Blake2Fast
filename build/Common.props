@@ -19,7 +19,7 @@
 		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC Cryptography</PackageTags>
 		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
 
-		<LangVersion>8</LangVersion>
+		<LangVersion>9</LangVersion>
 		<Features>strict</Features>
 		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -40,20 +40,20 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'!='Debug'">
-		<Deterministic>true</Deterministic>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
 		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Dist' Or '$(Configuration)'=='Coverage'">
+		<Deterministic>true</Deterministic>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Dist' Or '$(Configuration)'=='Coverage'">
 		<None Include="$(MSBuildThisFileDirectory)$(Owners).png" Pack="true" PackagePath="package" />
 		<None Include="$(RepositoryRoot)license" Pack="true" PackagePath="package" />
 		<SourceRoot Include="$(RepositoryRoot)" />
-	</ItemGroup>
-
-	<ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
 	</ItemGroup>
 
 </Project>

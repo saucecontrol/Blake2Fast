@@ -1,7 +1,11 @@
 ﻿using System;
+
+#if !BUILTIN_SPAN
 using System.Linq;
 using System.Reflection;
+#else
 using System.Runtime.CompilerServices;
+#endif
 
 namespace Blake2Fast
 {
@@ -10,9 +14,9 @@ namespace Blake2Fast
 #if !BUILTIN_SPAN
 		private static class TypeCache<T>
 		{
-			internal static readonly bool IsReferenceOrContainsReferences = checkRefs(typeof(T));
+			public static readonly bool IsReferenceOrContainsReferences = isOrContainsRef(typeof(T));
 
-			private static bool checkRefs(Type t)
+			private static bool isOrContainsRef(Type t)
 			{
 				if (t.IsPointer)
 					return false;
@@ -21,7 +25,7 @@ namespace Blake2Fast
 				if (!ti.IsValueType)
 					return true;
 
-				return ti.DeclaredFields.Any(fi => !fi.IsStatic && fi.FieldType != t && checkRefs(fi.FieldType));
+				return ti.DeclaredFields.Any(fi => !fi.IsStatic && fi.FieldType != t && isOrContainsRef(fi.FieldType));
 			}
 		}
 #endif

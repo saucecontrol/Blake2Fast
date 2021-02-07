@@ -1,11 +1,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
 	<!-- Work around https://github.com/Microsoft/msbuild/issues/3412 by writing the non-string assembly attributes manually -->
-	<Target Name="AddNonStringAssemblyInfoAttributes" AfterTargets="CoreGenerateAssemblyInfo" Outputs="$(AssemblyInfoFile)">
-
+	<Target Name="_AddNonStringAssemblyInfoAttributes" AfterTargets="CoreGenerateAssemblyInfo" Outputs="$(AssemblyInfoFile)">
 		<ItemGroup>
 			<AssemblyInfoLines Include="[assembly:System.CLSCompliant(true)]" />
 			<AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.ComVisible(false)]" />
+			<AssemblyInfoLines Include="[module:System.Runtime.CompilerServices.SkipLocalsInit]" />
 		</ItemGroup>
 
 		<WriteLinesToFile File="$(AssemblyInfoFile)" Lines="@(AssemblyInfoLines)" Overwrite="true" />

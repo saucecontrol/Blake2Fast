@@ -1,17 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<VersionPrefix>2.0.0</VersionPrefix>
-		<TargetFrameworks>netstandard1.1;netstandard1.3;netstandard2.0;netstandard2.1;netcoreapp2.1;netcoreapp3.0;net45</TargetFrameworks>
+		<VersionPrefix>2.0.1</VersionPrefix>
+		<TargetFrameworks>net45;netcoreapp2.1;netcoreapp3.0;netstandard1.1;netstandard1.3;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<NoWarn>$(NoWarn);NU5104</NoWarn><!-- Release package has prerelease dependency (S.R.I.Experimental) -->
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<DefineConstants>$(DefineConstants);BLAKE2_PUBLIC</DefineConstants>
-		<DefineConstants Condition="'$(TargetFramework)'!='netstandard1.1'">$(DefineConstants);BLAKE2_CRYPTOGRAPHY</DefineConstants>
-		<DefineConstants Condition="'$(TargetFramework)'=='netcoreapp2.1'">$(DefineConstants);HWINTRINSICS;HWINTRINSICS_EXP</DefineConstants>
-		<DefineConstants Condition="'$(TargetFramework)'=='netcoreapp3.0'">$(DefineConstants);HWINTRINSICS</DefineConstants>
-		<DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp')) Or '$(TargetFramework)'=='netstandard2.1'">$(DefineConstants);BUILTIN_SPAN</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals($(NetFrameworkVersion), '4.0')) Or $([MSBuild]::VersionGreaterThanOrEquals($(NetStandardVersion), '1.3'))">$(DefineConstants);BLAKE2_CRYPTOGRAPHY</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals($(NetCoreVersion), '2.1')) Or $([MSBuild]::VersionGreaterThanOrEquals($(NetStandardVersion), '2.1'))">$(DefineConstants);BUILTIN_SPAN</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals($(NetStandardVersion), '2.1'))">$(DefineConstants);BUILTIN_CSHARP8</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals($(NetCoreVersion), '2.1'))">$(DefineConstants);HWINTRINSICS</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionEquals($(NetCoreVersion), '2.1'))">$(DefineConstants);HWINTRINSICS_EXP</DefineConstants>
+		<DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals($(NetCoreVersion), '5.0'))">$(DefineConstants);BUILTIN_CSHARP9</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(DefineConstants.Contains('HWINTRINSICS')) And $(DefineConstants.Contains('HWINTRINSICS_EXP'))">
@@ -24,7 +26,7 @@
 		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.3" />
 	</ItemGroup>
 
-	<ItemGroup Condition="$(DefineConstants.Contains('BUILTIN_SPAN')) And '$(TargetFramework)'!='netcoreapp3.0'">
+	<ItemGroup Condition="$(DefineConstants.Contains('BUILTIN_SPAN')) And $([MSBuild]::VersionLessThan($(NetCoreVersion), '3.0'))">
 		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.1" />
 	</ItemGroup>
 

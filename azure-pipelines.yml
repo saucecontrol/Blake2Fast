@@ -35,7 +35,7 @@ steps:
 - script: dotnet test tests\Blake2.Test -c Coverage -s tests\runsettings --logger trx --collect "XPlat Code Coverage"
   displayName: Test
 
-- script: dotnet test tests\Blake2.Test -c Coverage -f netcoreapp3.0 -s tests\runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
+- script: dotnet test tests\Blake2.Test -c Coverage -f netcoreapp3.1 -s tests\runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
   displayName: Test - No AVX
   env:
     COMPlus_EnableAVX: 0
