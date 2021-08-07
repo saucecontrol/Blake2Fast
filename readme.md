@@ -5,9 +5,7 @@ Blake2Fast
 
 These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant BLAKE2 implementations have been tuned for high speed and low memory usage.  The .NET Core builds use the new x86 SIMD Intrinsics for even greater speed.  `Span<byte>` is used throughout for lower memory overhead compared to `byte[]` based APIs.
 
-On .NET Core 2.1+, Blake2Fast includes SSE4.1 SIMD-accelerated implementations of both BLAKE2b and BLAKE2s.
-
-On .NET Core 3+, a faster AVX2 implementation of BLAKE2b is included in addition to the SSE4.1 implementation.
+On .NET Core 3+ and .NET 5+, Blake2Fast includes SIMD-accelerated (SSE2-AVX2) implementations of both BLAKE2b and BLAKE2s.
 
 
 Installation
@@ -70,7 +68,7 @@ byte[] ComputeCompositeHash()
 
     hasher.Update(42);
     hasher.Update(Math.Pi);
-	hasher.Update("I love deadlines. I like the whooshing sound they make as they fly by.".AsSpan());
+    hasher.Update("I love deadlines. I like the whooshing sound they make as they fly by.".AsSpan());
 
     return hasher.Finish();
 }
@@ -125,15 +123,6 @@ byte[] WriteDataAndCalculateHash(byte[] data, string outFile)
     }
 }
 ```
-
-.NET Core 2.1 SIMD Intrinsics Warning
--------------------------------------
-
-The x86 SIMD Intrinsics used in the .NET Core 2.1 build are not officially supported by Microsoft.  Although the specific SSE Intrinsics used by Blake2Fast have been well-tested, the JIT support for the x86 Intrinsics in general is experimental in .NET Core 2.1.
-
-If you are uncomfortable using unsupported functionality, you can make a custom build of Blake2Fast by removing the `HWINTRINSICS` define constant for the `netcoreapp2.1` target in the [project file](src/Blake2Fast/Blake2Fast.csproj).
-
-This warning applies only to .NET Core 2.1.  The SIMD Intrinsics are fully supported on .NET Core 3+.
 
 Benchmarks
 ----------

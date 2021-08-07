@@ -23,19 +23,12 @@ namespace Blake2Fast.Implementation
 	unsafe partial struct Blake2sHashState
 	{
 		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
-#if !HWINTRINSICS_EXP
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
 		private static void mixSse41(uint* sh, uint* m)
 		{
 			ref byte rrm = ref MemoryMarshal.GetReference(rormask);
-#if HWINTRINSICS_EXP
-			var r16 = Unsafe.As<byte, Vector128<sbyte>>(ref rrm);
-			var r8  = Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.Add(ref rrm, 16));
-#else
 			var r16 = Unsafe.As<byte, Vector128<byte>>(ref rrm);
 			var r8  = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref rrm, Vector128<byte>.Count));
-#endif
 
 			var row1 = Sse2.LoadVector128(sh);
 			var row2 = Sse2.LoadVector128(sh + 4);
@@ -105,11 +98,7 @@ void g1() {
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -124,11 +113,7 @@ void g2() {
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -142,82 +127,48 @@ void loadcode(int round, int part) {
 	switch (r) {
 		case 0:
 #>
-#if HWINTRINSICS_EXP
-			<#= round == 0 ? "var " : "" #>b0 = Sse.StaticCast<float, uint>(Sse.Shuffle(Sse.StaticCast<uint, float>(m0), Sse.StaticCast<uint, float>(m1), 0b_10_00_10_00));
-#else
 			<#= round == 0 ? "var " : "" #>b0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_10_00_10_00).AsUInt32();
-#endif
 <#+
 			break;
 		case 1:
 #>
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<float, uint>(Sse.Shuffle(Sse.StaticCast<uint, float>(m0), Sse.StaticCast<uint, float>(m1), 0b_11_01_11_01));
-#else
 			b0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_11_01).AsUInt32();
-#endif
 <#+
 			break;
 		case 2:
 #>
 			var t0 = Sse2.Shuffle(m2, 0b_11_10_00_01);
 			var t1 = Sse2.Shuffle(m3, 0b_00_01_11_10);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_00_00_11));
-#else
 			b0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_00_00_11).AsUInt32();
-#endif
 <#+
 			break;
 		case 3:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_11_00));
-#else
 			t0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t0, 0b_10_11_00_01);
 <#+
 			break;
 		case 10:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_11_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			var t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			var t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 <#+
 			break;
 		case 11:
 #>
 			t0 = Sse2.Shuffle(m2, 0b_00_00_10_00);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m3), 0b_11_00_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_11_00_00_00).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 <#+
 			break;
 		case 12:
 #>
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m2.AsUInt16(), t0.AsUInt16(), 0b_00_11_00_00).AsUInt32();
 			t2 = Sse41.Blend(m0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_00_01_10);
 <#+
 			break;
@@ -225,69 +176,39 @@ void loadcode(int round, int part) {
 #>
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_00_01_10);
 <#+
 			break;
 		case 20:
 #>
 			t0 = Sse2.UnpackHigh(m2, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m1), 0b_00_00_11_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_11));
-#else
 			t1 = Sse41.Blend(m3.AsUInt16(), m1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 <#+
 			break;
 		case 21:
 #>
 			t0 = Sse2.UnpackLow(m2, m0);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m0), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(t0.AsUInt16(), m0.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			t2 = Sse2.ShiftLeftLogical128BitLane(m3, 8);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t2), 0b_11_00_00_00));
-#else
 			b0 = Sse41.Blend(t1.AsUInt16(), t2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 <#+
 			break;
 		case 22:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_11_00));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 12);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_00_11_10_01);
 <#+
 			break;
 		case 23:
 #>
 			t0 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m1), 0b_00_11_00_11));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_10_11_00);
 <#+
 			break;
@@ -295,104 +216,59 @@ void loadcode(int round, int part) {
 #>
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.UnpackHigh(t0, m2);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t1.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 <#+
 			break;
 		case 31:
 #>
 			t0 = Sse2.ShiftLeftLogical128BitLane(m2, 8);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m0), 0b_00_00_11_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m3.AsUInt16(), m0.AsUInt16(), 0b_00_00_11_00).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 <#+
 			break;
 		case 32:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m1), 0b_00_00_11_11));
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m3), 0b_11_00_00_00));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
 			t1 = Sse41.Blend(t0.AsUInt16(), m3.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_01_10_11);
 <#+
 			break;
 		case 33:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<sbyte, uint>(Ssse3.AlignRight(Sse.StaticCast<uint, sbyte>(m0), Sse.StaticCast<uint, sbyte>(m1), 4));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_11));
-#else
 			t0 = Ssse3.AlignRight(m0, m1, 4);
 			b0 = Sse41.Blend(t0.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 <#+
 			break;
 		case 40:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m2)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m2)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackLow(m1.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackHigh(m0.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 <#+
 			break;
 		case 41:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m3)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m1)));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackHigh(m1.AsUInt64(), m3.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackLow(m0.AsUInt64(), m1.AsUInt64()).AsUInt32();
 			b0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 <#+
 			break;
 		case 42:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m3), Sse.StaticCast<uint, ulong>(m1)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m2), Sse.StaticCast<uint, ulong>(m0)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackHigh(m3.AsUInt64(), m1.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackHigh(m2.AsUInt64(), m0.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 <#+
 			break;
 		case 43:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_00_11));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			t1 = Sse2.ShiftLeftLogical128BitLane(t0, 8);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_11));
-#else
 			t2 = Sse41.Blend(t1.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_11_01);
 <#+
 			break;
@@ -400,150 +276,82 @@ void loadcode(int round, int part) {
 #>
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.UnpackLow(m0, m2);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			b0 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 <#+
 			break;
 		case 51:
 #>
 			t0 = Sse2.ShiftRightLogical128BitLane(m2, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_00_11));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_11_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_00_00_00_11).AsUInt32();
 			b0 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 <#+
 			break;
 		case 52:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m0), 0b_00_00_11_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m0.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 <#+
 			break;
 		case 53:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m2), Sse.StaticCast<uint, ulong>(m1)));
-#else
 			t0 = Sse2.UnpackLow(m2.AsUInt64(), m1.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.Shuffle(m3, 0b_10_00_01_00);
 			t2 = Sse2.ShiftRightLogical128BitLane(t0, 4);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t2), 0b_00_11_00_11));
-#else
 			b0 = Sse41.Blend(t1.AsUInt16(), t2.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 <#+
 			break;
 		case 60:
 #>
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 12);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m3), 0b_00_11_00_11));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_00_11_00_11).AsUInt32();
 			b0 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 <#+
 			break;
 		case 61:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_11_00);
 <#+
 			break;
 		case 62:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m2)));
-#else
 			t0 = Sse2.UnpackLow(m0.AsUInt64(), m2.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 <#+
 			break;
 		case 63:
 #>
 			t0 = Sse2.UnpackHigh(m1, m2);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(t0)));
-#else
 			t1 = Sse2.UnpackHigh(m0.AsUInt64(), t0.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_01_10_11);
 <#+
 			break;
 		case 70:
 #>
 			t0 = Sse2.UnpackHigh(m0, m1);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_11));
-#else
 			t1 = Sse41.Blend(t0.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_10_00_11_01);
 <#+
 			break;
 		case 71:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(m3), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m2.AsUInt16(), m3.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m0, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_00_10_11);
 <#+
 			break;
 		case 72:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m3)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m2)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_11_00));
-#else
 			t0 = Sse2.UnpackHigh(m0.AsUInt64(), m3.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackLow(m1.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_01_00);
 <#+
 			break;
@@ -551,87 +359,51 @@ void loadcode(int round, int part) {
 #>
 			t0 = Sse2.UnpackLow(m0, m1);
 			t1 = Sse2.UnpackHigh(m1, m2);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			t2 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 <#+
 			break;
 		case 80:
 #>
 			t0 = Sse2.UnpackHigh(m1, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(m0)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m2), 0b_11_00_00_00));
-			b0 = Sse.StaticCast<ushort, uint>(Sse2.ShuffleHigh(Sse.StaticCast<uint, ushort>(t2), 0b_01_00_11_10));
-#else
 			t1 = Sse2.UnpackLow(t0.AsUInt64(), m0.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), m2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
 			b0 = Sse2.ShuffleHigh(t2.AsUInt16(), 0b_01_00_11_10).AsUInt32();
-#endif
 <#+
 			break;
 		case 81:
 #>
 			t0 = Sse2.UnpackHigh(m0, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(t0), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m2.AsUInt16(), t0.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_10_01_11);
 <#+
 			break;
 		case 82:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m3)));
-#else
 			t0 = Sse2.UnpackLow(m0.AsUInt64(), m3.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m2, 8);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_11_10_00);
 <#+
 			break;
 		case 83:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m0), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m0.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t0, 0b_00_11_10_01);
 <#+
 			break;
 		case 90:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_00_11));
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_00_11_11));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_00_00_11).AsUInt32();
 			t1 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_00).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_11_00_10);
 <#+
 			break;
 		case 91:
 #>
 			t0 = Sse2.ShiftLeftLogical128BitLane(m0, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_01_10_00_11);
 <#+
 			break;
@@ -639,27 +411,15 @@ void loadcode(int round, int part) {
 #>
 			t0 = Sse2.UnpackHigh(m0, m3);
 			t1 = Sse2.UnpackLow(m2, m3);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			t2 = Sse2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_00_10_01_11);
 <#+
 			break;
 		case 93:
 #>
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m2), 0b_11_00_00_00));
-#else
 			t0 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			t1 = Sse2.UnpackLow(m0, m3);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_10_11_00);
 <#+
 			break;

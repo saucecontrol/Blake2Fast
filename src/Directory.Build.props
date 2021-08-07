@@ -21,11 +21,12 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Dist'">
-		<PackageReference Include="SauceControl.InheritDoc" Version="1.0.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="all" />
+		<PackageReference Include="SauceControl.InheritDoc" Version="1.3.0" PrivateAssets="all" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)'=='Dist' or '$(Configuration)'=='Coverage'">
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="all" />
+	<ItemGroup Condition="'$(Configuration)'!='Dist'">
+		<InternalsVisibleTo Include="$(MSBuildProjectName).Test" />
 	</ItemGroup>
 
 </Project>

@@ -78,11 +78,9 @@ namespace Blake2Fast.Implementation
 
 					ulong* m = (ulong*)pin;
 #if HWINTRINSICS
-#if !HWINTRINSICS_EXP
 					if (Avx2.IsSupported)
 						mixAvx2(sh, m);
 					else
-#endif
 					if (Sse41.IsSupported)
 						mixSse41(sh, m);
 					else

@@ -21,19 +21,12 @@ namespace Blake2Fast.Implementation
 	unsafe partial struct Blake2sHashState
 	{
 		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
-#if !HWINTRINSICS_EXP
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
 		private static void mixSse41(uint* sh, uint* m)
 		{
 			ref byte rrm = ref MemoryMarshal.GetReference(rormask);
-#if HWINTRINSICS_EXP
-			var r16 = Unsafe.As<byte, Vector128<sbyte>>(ref rrm);
-			var r8  = Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.Add(ref rrm, 16));
-#else
 			var r16 = Unsafe.As<byte, Vector128<byte>>(ref rrm);
 			var r8  = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref rrm, Vector128<byte>.Count));
-#endif
 
 			var row1 = Sse2.LoadVector128(sh);
 			var row2 = Sse2.LoadVector128(sh + 4);
@@ -50,39 +43,23 @@ namespace Blake2Fast.Implementation
 			var m3 = Sse2.LoadVector128(m + 12);
 
 			//ROUND 1
-#if HWINTRINSICS_EXP
-			var b0 = Sse.StaticCast<float, uint>(Sse.Shuffle(Sse.StaticCast<uint, float>(m0), Sse.StaticCast<uint, float>(m1), 0b_10_00_10_00));
-#else
 			var b0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_10_00_10_00).AsUInt32();
-#endif
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<float, uint>(Sse.Shuffle(Sse.StaticCast<uint, float>(m0), Sse.StaticCast<uint, float>(m1), 0b_11_01_11_01));
-#else
 			b0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_11_01).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -95,40 +72,24 @@ namespace Blake2Fast.Implementation
 
 			var t0 = Sse2.Shuffle(m2, 0b_11_10_00_01);
 			var t1 = Sse2.Shuffle(m3, 0b_00_01_11_10);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_00_00_11));
-#else
 			b0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_00_00_11).AsUInt32();
-#endif
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_11_00));
-#else
 			t0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t0, 0b_10_11_00_01);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -140,50 +101,29 @@ namespace Blake2Fast.Implementation
 			row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
 
 			//ROUND 2
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_11_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			var t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			var t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.Shuffle(m2, 0b_00_00_10_00);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m3), 0b_11_00_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_11_00_00_00).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -195,23 +135,14 @@ namespace Blake2Fast.Implementation
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(t1), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m2.AsUInt16(), t0.AsUInt16(), 0b_00_11_00_00).AsUInt32();
 			t2 = Sse41.Blend(m0.AsUInt16(), t1.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_00_01_10);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -219,21 +150,13 @@ namespace Blake2Fast.Implementation
 
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_00_01_10);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -246,49 +169,28 @@ namespace Blake2Fast.Implementation
 
 			//ROUND 3
 			t0 = Sse2.UnpackHigh(m2, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m1), 0b_00_00_11_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_11));
-#else
 			t1 = Sse41.Blend(m3.AsUInt16(), m1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.UnpackLow(m2, m0);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m0), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(t0.AsUInt16(), m0.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			t2 = Sse2.ShiftLeftLogical128BitLane(m3, 8);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t2), 0b_11_00_00_00));
-#else
 			b0 = Sse41.Blend(t1.AsUInt16(), t2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -299,50 +201,29 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_11_00));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 12);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_00_11_10_01);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m1), 0b_00_11_00_11));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_10_11_00);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -356,44 +237,27 @@ namespace Blake2Fast.Implementation
 			//ROUND 4
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.UnpackHigh(t0, m2);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t1.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m2, 8);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m0), 0b_00_00_11_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m3.AsUInt16(), m0.AsUInt16(), 0b_00_00_11_00).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -404,44 +268,26 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m1), 0b_00_00_11_11));
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m3), 0b_11_00_00_00));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
 			t1 = Sse41.Blend(t0.AsUInt16(), m3.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_01_10_11);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<sbyte, uint>(Ssse3.AlignRight(Sse.StaticCast<uint, sbyte>(m0), Sse.StaticCast<uint, sbyte>(m1), 4));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_11));
-#else
 			t0 = Ssse3.AlignRight(m0, m1, 4);
 			b0 = Sse41.Blend(t0.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -453,48 +299,28 @@ namespace Blake2Fast.Implementation
 			row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
 
 			//ROUND 5
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m2)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m2)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackLow(m1.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackHigh(m0.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_01_11);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m3)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m1)));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackHigh(m1.AsUInt64(), m3.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackLow(m0.AsUInt64(), m1.AsUInt64()).AsUInt32();
 			b0 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -505,51 +331,29 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m3), Sse.StaticCast<uint, ulong>(m1)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m2), Sse.StaticCast<uint, ulong>(m0)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_00_11));
-#else
 			t0 = Sse2.UnpackHigh(m3.AsUInt64(), m1.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackHigh(m2.AsUInt64(), m0.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_00_11));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			t1 = Sse2.ShiftLeftLogical128BitLane(t0, 8);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_11));
-#else
 			t2 = Sse41.Blend(t1.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_00_11_01);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -563,42 +367,25 @@ namespace Blake2Fast.Implementation
 			//ROUND 6
 			t0 = Sse2.UnpackHigh(m0, m1);
 			t1 = Sse2.UnpackLow(m0, m2);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			b0 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.ShiftRightLogical128BitLane(m2, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_00_11));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_11_11_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_00_00_00_11).AsUInt32();
 			b0 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -609,53 +396,29 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m0), 0b_00_00_11_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m0.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m3, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_00_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_00_01);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m2), Sse.StaticCast<uint, ulong>(m1)));
-#else
 			t0 = Sse2.UnpackLow(m2.AsUInt64(), m1.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.Shuffle(m3, 0b_10_00_01_00);
 			t2 = Sse2.ShiftRightLogical128BitLane(t0, 4);
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t2), 0b_00_11_00_11));
-#else
 			b0 = Sse41.Blend(t1.AsUInt16(), t2.AsUInt16(), 0b_00_11_00_11).AsUInt32();
-#endif
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -668,48 +431,27 @@ namespace Blake2Fast.Implementation
 
 			//ROUND 7
 			t0 = Sse2.ShiftLeftLogical128BitLane(m1, 12);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m3), 0b_00_11_00_11));
-			b0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_00_11_00_11).AsUInt32();
 			b0 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_11_00);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -720,48 +462,28 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m2)));
-#else
 			t0 = Sse2.UnpackLow(m0.AsUInt64(), m2.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m1, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_00));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_11_01_00_10);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.UnpackHigh(m1, m2);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(t0)));
-#else
 			t1 = Sse2.UnpackHigh(m0.AsUInt64(), t0.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_01_10_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -774,47 +496,27 @@ namespace Blake2Fast.Implementation
 
 			//ROUND 8
 			t0 = Sse2.UnpackHigh(m0, m1);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(m3), 0b_00_00_11_11));
-#else
 			t1 = Sse41.Blend(t0.AsUInt16(), m3.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_10_00_11_01);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(m3), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m2.AsUInt16(), m3.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m0, 4);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_00_10_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -825,25 +527,15 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m3)));
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m1), Sse.StaticCast<uint, ulong>(m2)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_11_11_00));
-#else
 			t0 = Sse2.UnpackHigh(m0.AsUInt64(), m3.AsUInt64()).AsUInt32();
 			t1 = Sse2.UnpackLow(m1.AsUInt64(), m2.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_11_11_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_11_01_00);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -851,21 +543,13 @@ namespace Blake2Fast.Implementation
 
 			t0 = Sse2.UnpackLow(m0, m1);
 			t1 = Sse2.UnpackHigh(m1, m2);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			t2 = Sse2.UnpackLow(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_10_01_00_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -878,45 +562,27 @@ namespace Blake2Fast.Implementation
 
 			//ROUND 9
 			t0 = Sse2.UnpackHigh(m1, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(m0)));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(m2), 0b_11_00_00_00));
-			b0 = Sse.StaticCast<ushort, uint>(Sse2.ShuffleHigh(Sse.StaticCast<uint, ushort>(t2), 0b_01_00_11_10));
-#else
 			t1 = Sse2.UnpackLow(t0.AsUInt64(), m0.AsUInt64()).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), m2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
 			b0 = Sse2.ShuffleHigh(t2.AsUInt16(), 0b_01_00_11_10).AsUInt32();
-#endif
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.UnpackHigh(m0, m3);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m2), Sse.StaticCast<uint, ushort>(t0), 0b_11_11_00_00));
-#else
 			t1 = Sse41.Blend(m2.AsUInt16(), t0.AsUInt16(), 0b_11_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_00_10_01_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -927,47 +593,27 @@ namespace Blake2Fast.Implementation
 			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ulong, uint>(Sse2.UnpackLow(Sse.StaticCast<uint, ulong>(m0), Sse.StaticCast<uint, ulong>(m3)));
-#else
 			t0 = Sse2.UnpackLow(m0.AsUInt64(), m3.AsUInt64()).AsUInt32();
-#endif
 			t1 = Sse2.ShiftRightLogical128BitLane(m2, 8);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_00_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_00_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_11_10_00);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m0), 0b_00_11_00_00));
-#else
 			t0 = Sse41.Blend(m1.AsUInt16(), m0.AsUInt16(), 0b_00_11_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t0, 0b_00_11_10_01);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -979,46 +625,28 @@ namespace Blake2Fast.Implementation
 			row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
 
 			//ROUND 10
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m0), Sse.StaticCast<uint, ushort>(m2), 0b_00_00_00_11));
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(m2), 0b_00_11_00_00));
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t1), Sse.StaticCast<uint, ushort>(t0), 0b_00_00_11_11));
-#else
 			t0 = Sse41.Blend(m0.AsUInt16(), m2.AsUInt16(), 0b_00_00_00_11).AsUInt32();
 			t1 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_00_11_00_00).AsUInt32();
 			t2 = Sse41.Blend(t1.AsUInt16(), t0.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_11_00_10);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
 			t0 = Sse2.ShiftLeftLogical128BitLane(m0, 4);
-#if HWINTRINSICS_EXP
-			t1 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m1), Sse.StaticCast<uint, ushort>(t0), 0b_11_00_00_00));
-#else
 			t1 = Sse41.Blend(m1.AsUInt16(), t0.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t1, 0b_01_10_00_11);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
@@ -1031,47 +659,27 @@ namespace Blake2Fast.Implementation
 
 			t0 = Sse2.UnpackHigh(m0, m3);
 			t1 = Sse2.UnpackLow(m2, m3);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ulong, uint>(Sse2.UnpackHigh(Sse.StaticCast<uint, ulong>(t0), Sse.StaticCast<uint, ulong>(t1)));
-#else
 			t2 = Sse2.UnpackHigh(t0.AsUInt64(), t1.AsUInt64()).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_00_10_01_11);
 
 			//G1
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r16));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);
 			row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
 
-#if HWINTRINSICS_EXP
-			t0 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(m3), Sse.StaticCast<uint, ushort>(m2), 0b_11_00_00_00));
-#else
 			t0 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_11_00_00_00).AsUInt32();
-#endif
 			t1 = Sse2.UnpackLow(m0, m3);
-#if HWINTRINSICS_EXP
-			t2 = Sse.StaticCast<ushort, uint>(Sse41.Blend(Sse.StaticCast<uint, ushort>(t0), Sse.StaticCast<uint, ushort>(t1), 0b_00_00_11_11));
-#else
 			t2 = Sse41.Blend(t0.AsUInt16(), t1.AsUInt16(), 0b_00_00_11_11).AsUInt32();
-#endif
 			b0 = Sse2.Shuffle(t2, 0b_01_10_11_00);
 
 			//G2
 			row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
 			row4 = Sse2.Xor(row4, row1);
-#if HWINTRINSICS_EXP
-			row4 = Sse.StaticCast<sbyte, uint>(Ssse3.Shuffle(Sse.StaticCast<uint, sbyte>(row4), r8));
-#else
 			row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
-#endif
 
 			row3 = Sse2.Add(row3, row4);
 			row2 = Sse2.Xor(row2, row3);

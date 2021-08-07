@@ -21,19 +21,12 @@ namespace Blake2Fast.Implementation
 	unsafe partial struct Blake2bHashState
 	{
 		// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
-#if !HWINTRINSICS_EXP
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
 		private static void mixSse41(ulong* sh, ulong* m)
 		{
 			ref byte rrm = ref MemoryMarshal.GetReference(rormask);
-#if HWINTRINSICS_EXP
-			var r24 = Unsafe.As<byte, Vector128<sbyte>>(ref rrm);
-			var r16 = Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.Add(ref rrm, 16));
-#else
 			var r24 = Unsafe.As<byte, Vector128<byte>>(ref rrm);
 			var r16 = Unsafe.As<byte, Vector128<byte>>(ref Unsafe.Add(ref rrm, Vector128<byte>.Count));
-#endif
 
 			var row1l = Sse2.LoadVector128(sh);
 			var row1h = Sse2.LoadVector128(sh + 2);
@@ -65,13 +58,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -79,13 +67,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m0, m1);
 			b1 = Sse2.UnpackHigh(m2, m3);
@@ -97,13 +80,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -115,33 +93,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			var t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			var t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			var t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			var t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			var m4 = Sse2.LoadVector128(m + 8);
 			var m5 = Sse2.LoadVector128(m + 10);
@@ -158,13 +122,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -172,13 +131,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m4, m5);
 			b1 = Sse2.UnpackHigh(m6, m7);
@@ -190,13 +144,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -208,33 +157,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 2
 			b0 = Sse2.UnpackLow(m7, m2);
@@ -247,13 +182,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -261,20 +191,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m5, m4);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m3), Sse.StaticCast<ulong, sbyte>(m7), 8));
-#else
 			b1 = Ssse3.AlignRight(m3, m7, 8);
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -283,13 +204,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -301,39 +217,21 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m0), 0b_01_00_11_10));
-#else
 			b0 = Sse2.Shuffle(m0.AsUInt32(), 0b_01_00_11_10).AsUInt64();
-#endif
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			//G1
@@ -343,13 +241,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -357,13 +250,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m6, m1);
 			b1 = Sse2.UnpackHigh(m3, m1);
@@ -375,13 +263,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -393,40 +276,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 3
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m6), Sse.StaticCast<ulong, sbyte>(m5), 8));
-#else
 			b0 = Ssse3.AlignRight(m6, m5, 8);
-#endif
 			b1 = Sse2.UnpackHigh(m2, m7);
 
 			//G1
@@ -436,13 +301,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -450,20 +310,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m4, m0);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m6), 0b_1111_0000));
-#else
 			b1 = Sse41.Blend(m1.AsUInt16(), m6.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -472,13 +323,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -490,39 +336,21 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m5), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m5.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 			b1 = Sse2.UnpackHigh(m3, m4);
 
 			//G1
@@ -532,13 +360,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -546,20 +369,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m7, m3);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m2), Sse.StaticCast<ulong, sbyte>(m0), 8));
-#else
 			b1 = Ssse3.AlignRight(m2, m0, 8);
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -568,13 +382,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -586,33 +395,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 4
 			b0 = Sse2.UnpackHigh(m3, m1);
@@ -625,13 +420,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -639,13 +429,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m4, m0);
 			b1 = Sse2.UnpackLow(m6, m7);
@@ -657,13 +442,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -675,41 +455,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m2), 0b_1111_0000));
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m7), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
 			b1 = Sse41.Blend(m2.AsUInt16(), m7.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -718,13 +479,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -732,13 +488,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m3, m5);
 			b1 = Sse2.UnpackLow(m0, m4);
@@ -750,13 +501,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -768,33 +514,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 5
 			b0 = Sse2.UnpackHigh(m4, m2);
@@ -807,13 +539,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -821,21 +548,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m0), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m7), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
 			b1 = Sse41.Blend(m2.AsUInt16(), m7.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -844,13 +561,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -862,41 +574,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m7), Sse.StaticCast<ulong, ushort>(m5), 0b_1111_0000));
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m3), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m7.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
 			b1 = Sse41.Blend(m3.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -905,13 +598,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -919,21 +607,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m6), Sse.StaticCast<ulong, sbyte>(m0), 8));
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m4), Sse.StaticCast<ulong, ushort>(m6), 0b_1111_0000));
-#else
 			b0 = Ssse3.AlignRight(m6, m0, 8);
 			b1 = Sse41.Blend(m4.AsUInt16(), m6.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -942,13 +620,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -960,33 +633,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 6
 			b0 = Sse2.UnpackLow(m1, m3);
@@ -999,13 +658,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1013,13 +667,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m6, m5);
 			b1 = Sse2.UnpackHigh(m5, m1);
@@ -1031,13 +680,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1049,39 +693,21 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m2), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m2.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 			b1 = Sse2.UnpackHigh(m7, m0);
 
 			//G1
@@ -1091,13 +717,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1105,20 +726,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m6, m2);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m7), Sse.StaticCast<ulong, ushort>(m4), 0b_1111_0000));
-#else
 			b1 = Sse41.Blend(m7.AsUInt16(), m4.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1127,13 +739,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1145,40 +752,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 7
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m6), Sse.StaticCast<ulong, ushort>(m0), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m6.AsUInt16(), m0.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 			b1 = Sse2.UnpackLow(m7, m2);
 
 			//G1
@@ -1188,13 +777,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1202,20 +786,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m2, m7);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m5), Sse.StaticCast<ulong, sbyte>(m6), 8));
-#else
 			b1 = Ssse3.AlignRight(m5, m6, 8);
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1224,13 +799,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1242,40 +812,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			b0 = Sse2.UnpackLow(m0, m3);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m4), 0b_01_00_11_10));
-#else
 			b1 = Sse2.Shuffle(m4.AsUInt32(), 0b_01_00_11_10).AsUInt64();
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1284,13 +836,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1298,20 +845,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m3, m1);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m5), 0b_1111_0000));
-#else
 			b1 = Sse41.Blend(m1.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1320,13 +858,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1338,41 +871,23 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 8
 			b0 = Sse2.UnpackHigh(m6, m3);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m6), Sse.StaticCast<ulong, ushort>(m1), 0b_1111_0000));
-#else
 			b1 = Sse41.Blend(m6.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1381,13 +896,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1395,19 +905,10 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m7), Sse.StaticCast<ulong, sbyte>(m5), 8));
-#else
 			b0 = Ssse3.AlignRight(m7, m5, 8);
-#endif
 			b1 = Sse2.UnpackHigh(m0, m4);
 
 			//G2
@@ -1417,13 +918,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1435,33 +931,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			b0 = Sse2.UnpackHigh(m2, m7);
 			b1 = Sse2.UnpackLow(m4, m1);
@@ -1473,13 +955,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1487,13 +964,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m0, m2);
 			b1 = Sse2.UnpackLow(m3, m5);
@@ -1505,13 +977,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1523,41 +990,23 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 9
 			b0 = Sse2.UnpackLow(m3, m7);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m0), Sse.StaticCast<ulong, sbyte>(m5), 8));
-#else
 			b1 = Ssse3.AlignRight(m0, m5, 8);
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1566,13 +1015,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1580,20 +1024,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m7, m4);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m4), Sse.StaticCast<ulong, sbyte>(m1), 8));
-#else
 			b1 = Ssse3.AlignRight(m4, m1, 8);
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1602,13 +1037,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1620,40 +1050,22 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			b0 = m6;
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m5), Sse.StaticCast<ulong, sbyte>(m0), 8));
-#else
 			b1 = Ssse3.AlignRight(m5, m0, 8);
-#endif
 
 			//G1
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1662,13 +1074,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1676,19 +1083,10 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m1), Sse.StaticCast<ulong, ushort>(m3), 0b_1111_0000));
-#else
 			b0 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 			b1 = m2;
 
 			//G2
@@ -1698,13 +1096,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1716,33 +1109,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 10
 			b0 = Sse2.UnpackLow(m5, m4);
@@ -1755,13 +1134,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1769,20 +1143,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m1, m2);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<ushort, ulong>(Sse41.Blend(Sse.StaticCast<ulong, ushort>(m3), Sse.StaticCast<ulong, ushort>(m2), 0b_1111_0000));
-#else
 			b1 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1791,13 +1156,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1809,33 +1169,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			b0 = Sse2.UnpackHigh(m7, m4);
 			b1 = Sse2.UnpackHigh(m1, m6);
@@ -1847,13 +1193,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1861,19 +1202,10 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m7), Sse.StaticCast<ulong, sbyte>(m5), 8));
-#else
 			b0 = Ssse3.AlignRight(m7, m5, 8);
-#endif
 			b1 = Sse2.UnpackLow(m6, m0);
 
 			//G2
@@ -1883,13 +1215,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1901,33 +1228,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 11
 			b0 = Sse2.UnpackLow(m0, m1);
@@ -1940,13 +1253,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1954,13 +1262,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m0, m1);
 			b1 = Sse2.UnpackHigh(m2, m3);
@@ -1972,13 +1275,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -1990,33 +1288,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			b0 = Sse2.UnpackLow(m4, m5);
 			b1 = Sse2.UnpackLow(m6, m7);
@@ -2028,13 +1312,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2042,13 +1321,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackHigh(m4, m5);
 			b1 = Sse2.UnpackHigh(m6, m7);
@@ -2060,13 +1334,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2078,33 +1347,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			//ROUND 12
 			b0 = Sse2.UnpackLow(m7, m2);
@@ -2117,13 +1372,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2131,20 +1381,11 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m5, m4);
-#if HWINTRINSICS_EXP
-			b1 = Sse.StaticCast<sbyte, ulong>(Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(m3), Sse.StaticCast<ulong, sbyte>(m7), 8));
-#else
 			b1 = Ssse3.AlignRight(m3, m7, 8);
-#endif
 
 			//G2
 			row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -2153,13 +1394,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2171,39 +1407,21 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//DIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2h, row2l, 8);
 			t1 = Ssse3.AlignRight(row2l, row2h, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4h, row4l, 8);
 			t1 = Ssse3.AlignRight(row4l, row4h, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
-#if HWINTRINSICS_EXP
-			b0 = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(m0), 0b_01_00_11_10));
-#else
 			b0 = Sse2.Shuffle(m0.AsUInt32(), 0b_01_00_11_10).AsUInt64();
-#endif
 			b1 = Sse2.UnpackHigh(m5, m2);
 
 			//G1
@@ -2213,13 +1431,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4l), 0b_10_11_00_01));
-			row4h = Sse.StaticCast<uint, ulong>(Sse2.Shuffle(Sse.StaticCast<ulong, uint>(row4h), 0b_10_11_00_01));
-#else
 			row4l = Sse2.Shuffle(row4l.AsUInt32(), 0b_10_11_00_01).AsUInt64();
 			row4h = Sse2.Shuffle(row4h.AsUInt32(), 0b_10_11_00_01).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2227,13 +1440,8 @@ namespace Blake2Fast.Implementation
 			row2l = Sse2.Xor(row2l, row3l);
 			row2h = Sse2.Xor(row2h, row3h);
 
-#if HWINTRINSICS_EXP
-			row2l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2l), r24));
-			row2h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row2h), r24));
-#else
 			row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 			row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
-#endif
 
 			b0 = Sse2.UnpackLow(m6, m1);
 			b1 = Sse2.UnpackHigh(m3, m1);
@@ -2245,13 +1453,8 @@ namespace Blake2Fast.Implementation
 			row4l = Sse2.Xor(row4l, row1l);
 			row4h = Sse2.Xor(row4h, row1h);
 
-#if HWINTRINSICS_EXP
-			row4l = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4l), r16));
-			row4h = Sse.StaticCast<sbyte, ulong>(Ssse3.Shuffle(Sse.StaticCast<ulong, sbyte>(row4h), r16));
-#else
 			row4l = Ssse3.Shuffle(row4l.AsByte(), r16).AsUInt64();
 			row4h = Ssse3.Shuffle(row4h.AsByte(), r16).AsUInt64();
-#endif
 
 			row3l = Sse2.Add(row3l, row4l);
 			row3h = Sse2.Add(row3h, row4h);
@@ -2263,33 +1466,19 @@ namespace Blake2Fast.Implementation
 			row2h = Sse2.Xor(Sse2.ShiftRightLogical(row2h, 63), Sse2.Add(row2h, row2h));
 
 			//UNDIAGONALIZE
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2l), Sse.StaticCast<ulong, sbyte>(row2h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row2h), Sse.StaticCast<ulong, sbyte>(row2l), 8);
-			row2l = Sse.StaticCast<sbyte, ulong>(t0);
-			row2h = Sse.StaticCast<sbyte, ulong>(t1);
-#else
 			t0 = Ssse3.AlignRight(row2l, row2h, 8);
 			t1 = Ssse3.AlignRight(row2h, row2l, 8);
 			row2l = t0;
 			row2h = t1;
-#endif
 
 			b0 = row3l;
 			row3l = row3h;
 			row3h = b0;
 
-#if HWINTRINSICS_EXP
-			t0 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4l), Sse.StaticCast<ulong, sbyte>(row4h), 8);
-			t1 = Ssse3.AlignRight(Sse.StaticCast<ulong, sbyte>(row4h), Sse.StaticCast<ulong, sbyte>(row4l), 8);
-			row4l = Sse.StaticCast<sbyte, ulong>(t1);
-			row4h = Sse.StaticCast<sbyte, ulong>(t0);
-#else
 			t0 = Ssse3.AlignRight(row4l, row4h, 8);
 			t1 = Ssse3.AlignRight(row4h, row4l, 8);
 			row4l = t1;
 			row4h = t0;
-#endif
 
 			row1l = Sse2.Xor(row1l, row3l);
 			row1h = Sse2.Xor(row1h, row3h);

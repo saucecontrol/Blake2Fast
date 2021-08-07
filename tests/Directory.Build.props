@@ -11,7 +11,7 @@
 		<UseSourceLink>true</UseSourceLink>
 		<CoverletOutputFormat>opencover</CoverletOutputFormat>
 		<CoverletOutput>$(MSBuildThisFileDirectory)..\out\coverage\opencover$(CoverageFileSuffix).xml</CoverletOutput>
-		<Exclude>[$(AssemblyName)]</Exclude>
+		<Exclude>[$(AssemblyName)],[*]System.*</Exclude>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Coverage'">

@@ -12,11 +12,6 @@ namespace Blake2Fast
 			Blake2s
 		}
 
-#if NETSTANDARD1_3
-		private readonly int HashSizeValue;
-		public sealed override int HashSize => HashSizeValue;
-#endif
-
 		private readonly Algorithm alg;
 		private IBlake2Incremental impl;
 
@@ -27,11 +22,7 @@ namespace Blake2Fast
 			HashName = alg.ToString();
 
 			if (key.Length > 0)
-#if NETSTANDARD1_3
-				base.Key = key.ToArray();
-#else
 				KeyValue = key.ToArray();
-#endif
 
 			impl = createIncrementalInstance();
 		}
@@ -56,11 +47,7 @@ namespace Blake2Fast
 
 		private IBlake2Incremental createIncrementalInstance()
 		{
-#if NETSTANDARD1_3
-			var key = new ReadOnlySpan<byte>(base.Key);
-#else
 			var key = new ReadOnlySpan<byte>(KeyValue);
-#endif
 
 			return alg == Algorithm.Blake2b ?
 				Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :

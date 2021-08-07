@@ -3,7 +3,6 @@ using System.Linq;
 using System.Json;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 using Xunit;
 using Blake2Fast;
@@ -59,17 +58,17 @@ public class KnownAnswerTest
 {
 	struct TestStruct
 	{
-		public static readonly KnownAnswerTest Test = new KnownAnswerTest();
+		public static readonly KnownAnswerTest Test = new();
 
 		private readonly DateTime when;
 		public int HowMany;
 	}
 
-	private static bool tryReadAndAdvance<T>(out T val, ref ReadOnlySpan<byte> span) where T : struct
+	private static unsafe bool tryReadAndAdvance<T>(out T val, ref ReadOnlySpan<byte> span) where T : unmanaged
 	{
 		bool res = MemoryMarshal.TryRead(span, out val);
 		if (res)
-			span = span.Slice(Unsafe.SizeOf<T>());
+			span = span.Slice(sizeof(T));
 
 		return res;
 	}

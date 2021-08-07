@@ -6,7 +6,7 @@
 		<RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
 		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
 		<Title>High-Performance BLAKE2 Hashing for .NET</Title>
-		<Description>Optimized implementations of the BLAKE2b and BLAKE2s cryptographic hashing algorithms. Uses SSE2-SSE4.1 Hardware Intrinsics support on .NET Core 2.1+ and AVX2 on .NET Core 3+</Description>
+		<Description>Optimized implementations of the BLAKE2b and BLAKE2s cryptographic hashing algorithms. Uses SSE2-AVX2 SIMD Hardware Intrinsics support on .NET Core 3.1 and .NET 5+</Description>
 
 		<RootNamespace>$(MSBuildProjectName)</RootNamespace>
 		<AssemblyName>$(Owners).$(MSBuildProjectName)</AssemblyName>
@@ -37,6 +37,7 @@
 
 		<AssemblyInfoFile>$(IntDir)_AssemblyInfo.cs</AssemblyInfoFile>
 		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)$(Owners).snk</AssemblyOriginatorKeyFile>
+		<PublicKey>0024000004800000940000000602000000240000525341310004000001000100e155a9524829be97329a8ccbeec33e5967353179a5d267fc141df370d38ef98d3f21c0852173b0968b96245bbe3c60f0053b2d61c6b326b26572cdeabf14c7cf29421e09d0031017d89f5dce69ab90b8d0d962dc86efbf5eb4afb55bc043810039cfc93d1dcbd511addbcdaabda6cd70270c568aa5d6a26dd5e5edd22de035d0</PublicKey>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'!='Debug'">

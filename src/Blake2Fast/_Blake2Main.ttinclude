@@ -121,11 +121,9 @@ if (alg.bits == 64) {
 <#
 if (alg.bits == 64) {
 #>
-#if !HWINTRINSICS_EXP
 					if (Avx2.IsSupported)
 						mixAvx2(sh, m);
 					else
-#endif
 <#
 }
 #>

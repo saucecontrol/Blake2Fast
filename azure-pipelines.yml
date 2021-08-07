@@ -16,13 +16,6 @@ steps:
     performMultiLevelLookup: true
 
 - task: UseDotNet@2
-  displayName: Ensure 2.1 Runtime
-  inputs:
-    packageType: runtime
-    version: 2.1.x
-    performMultiLevelLookup: true
-
-- task: UseDotNet@2
   displayName: Ensure 3.1 Runtime
   inputs:
     packageType: runtime
