@@ -1,59 +1,63 @@
+name: $(Year:yy)$(DayOfYear)$(Rev:r)
 trigger:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - readme.md
 
 pool:
   vmImage: windows-latest
 
 variables:
+  azureNuGet: https://pkgs.dev.azure.com/saucecontrol/Blake2Fast/_packaging/blake2fast_ci/nuget/v3/index.json
   disable.coverage.autogenerate: true
 
-name: $(Year:yy)$(DayOfYear)$(Rev:r)
 steps:
 - task: UseDotNet@2
-  displayName: Ensure 5.0 SDK
+  displayName: Ensure 8.0 SDK
   inputs:
-    version: 5.0.x
-    performMultiLevelLookup: true
+    version: 8.0.x
+    includePreviewVersions: true
 
 - task: UseDotNet@2
-  displayName: Ensure 3.1 Runtime
+  displayName: Ensure 6.0 Runtime
   inputs:
     packageType: runtime
-    version: 3.1.x
+    version: 6.0.x
     performMultiLevelLookup: true
 
-- script: dotnet build src\Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
+- script: dotnet build src/Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
   displayName: Build
 
-- script: dotnet test tests\Blake2.Test -c Coverage -s tests\runsettings --logger trx --collect "XPlat Code Coverage"
+- script: dotnet test tests/Blake2.Test -c Coverage -s tests/runsettings --logger trx --collect "XPlat Code Coverage"
   displayName: Test
 
-- script: dotnet test tests\Blake2.Test -c Coverage -f netcoreapp3.1 -s tests\runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
+- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -s tests/runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
   displayName: Test - No AVX
   env:
     COMPlus_EnableAVX: 0
 
-- task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@4
+- task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@5
   displayName: Coverage Reports
   inputs:
-    reports: out\coverage\opencover*.xml
-    targetdir: out\coverage\reports
+    reports: out/coverage/opencover*.xml
+    targetdir: out/coverage/reports
     reporttypes: HtmlInline_AzurePipelines;Cobertura;Badges
 
 - task: NuGetAuthenticate@0
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
-- script: dotnet nuget push --api-key AzureArtifacts --source https://pkgs.dev.azure.com/saucecontrol/Blake2Fast/_packaging/blake2fast_ci/nuget/v3/index.json out\bin\Blake2Fast\Dist\SauceControl.Blake2Fast.*.nupkg
+- script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out/nuget/*.nupkg
   displayName: Push
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
 - task: PublishTestResults@2
   inputs:
     testRunner: VSTest
-    testResultsFiles: out\testresults\*.trx
+    testResultsFiles: out/testresults/*.trx
 
-- task: PublishCodeCoverageResults@1
+- task: PublishCodeCoverageResults@2
   inputs:
-    codeCoverageTool: Cobertura
-    summaryFileLocation: out\coverage\reports\cobertura.xml
-    reportDirectory: out\coverage\reports
+    summaryFileLocation: out/coverage/reports/cobertura.xml

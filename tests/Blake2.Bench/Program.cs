@@ -90,9 +90,9 @@ class Program
 		Console.WriteLine(bench.GetHashDHB2(BenchConfig.Data.Last()).ToHexString());
 		Console.WriteLine(bench.GetHashICB2(BenchConfig.Data.Last()).ToHexString());
 		Console.WriteLine(bench.GetHashKSB2(BenchConfig.Data.Last()).ToHexString());
-
-#if !NETFRAMEWORK
 		Console.WriteLine(bench.GetHashBlake2Core(BenchConfig.Data.Last()).ToHexString());
+
+#if NET6_0_OR_GREATER
 		Console.WriteLine(bench.GetHashNSec(BenchConfig.Data.Last()).ToHexString()); // not RFC-compliant -- result will be all 0s when digest size < default
 #endif
 
@@ -179,7 +179,6 @@ public class Blake2Bench
 		return Isopoh.Cryptography.Blake2b.Blake2B.ComputeHash(data, cfg, null);
 	}
 
-#if !NETFRAMEWORK
 	[Benchmark(Description = "Blake2Core"), BenchmarkCategory("Blake2b")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2Core(byte[] data)
@@ -191,6 +190,7 @@ public class Blake2Bench
 		return Blake2Core.Blake2B.ComputeHash(data, cfg);
 	}
 
+#if NET6_0_OR_GREATER
 	[Benchmark(Description = "NSec"), BenchmarkCategory("Blake2b")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashNSec(byte[] data)

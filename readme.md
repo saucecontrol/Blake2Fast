@@ -3,9 +3,9 @@
 Blake2Fast
 ==========
 
-These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant BLAKE2 implementations have been tuned for high speed and low memory usage.  The .NET Core builds use the new x86 SIMD Intrinsics for even greater speed.  `Span<byte>` is used throughout for lower memory overhead compared to `byte[]` based APIs.
+These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant BLAKE2 implementations have been tuned for high speed and low memory usage.  `Span<byte>` is used throughout for lower memory overhead compared to `byte[]` based APIs.
 
-On .NET Core 3+ and .NET 5+, Blake2Fast includes SIMD-accelerated (SSE2-AVX2) implementations of both BLAKE2b and BLAKE2s.
+On modern .NET, Blake2Fast includes SIMD-accelerated (SSE2-AVX2) implementations of both BLAKE2b and BLAKE2s.
 
 
 Installation

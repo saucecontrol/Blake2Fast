@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 
@@ -69,17 +70,17 @@ class ByPlatformByDataLengthOrderer : IOrderer
 
 	public static readonly IOrderer Instance = new ByPlatformByDataLengthOrderer();
 
-	public IEnumerable<BenchmarkCase> GetExecutionOrder(ImmutableArray<BenchmarkCase> benchmarks) => benchmarks;
+	public IEnumerable<BenchmarkCase> GetExecutionOrder(ImmutableArray<BenchmarkCase> benchmarks, IEnumerable<BenchmarkLogicalGroupRule>? order = null) => benchmarks;
 
 	public string GetHighlightGroupKey(BenchmarkCase benchmark) => null;
 
 	public string GetLogicalGroupKey(ImmutableArray<BenchmarkCase> allBenchmarks, BenchmarkCase benchmark) =>
 		string.Join("-", benchmark.Job.Environment.Platform.ToString(), benchmark.Job.ToString(), ((byte[])benchmark.Parameters.Items[0].Value).Length.ToString("X8"));
 
-	public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups) =>
+	public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups, IEnumerable<BenchmarkLogicalGroupRule>? order = null) =>
 		logicalGroups.OrderBy(lg => lg.Key);
 
-	public virtual IEnumerable<BenchmarkCase> GetSummaryOrder(ImmutableArray<BenchmarkCase> benchmarks, Summary summary)
+	public IEnumerable<BenchmarkCase> GetSummaryOrder(ImmutableArray<BenchmarkCase> benchmarks, Summary summary)
 	{
 		var benchmarkLogicalGroups = benchmarks.GroupBy(b => GetLogicalGroupKey(benchmarks, b));
 		foreach (var logicalGroup in GetLogicalGroupOrder(benchmarkLogicalGroups))

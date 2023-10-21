@@ -1,6 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<!-- Work around https://github.com/Microsoft/msbuild/issues/3412 by writing the non-string assembly attributes manually -->
+	<!-- WriteCodeFragment task can write assembly attributes but not module attributes, so they are all handled here -->
 	<Target Name="_AddNonStringAssemblyInfoAttributes" AfterTargets="CoreGenerateAssemblyInfo" Outputs="$(AssemblyInfoFile)">
 		<ItemGroup>
 			<AssemblyInfoLines Include="[assembly:System.CLSCompliant(true)]" />
