@@ -1,0 +1,5 @@
+[*.cs]
+indent_style = space
+indent_size = 4
+
+generated_code = true

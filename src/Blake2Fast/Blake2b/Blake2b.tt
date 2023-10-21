@@ -1,4 +1,4 @@
-﻿<#@ template language="C#" #>
-<#@ output extension=".cs" #>
+<#@ template language="C#" #>
+<#@ output extension=".cs" encoding="utf-8" #>
 <# var alg = b2b; #>
 <#@ include file="..\_Blake2Api.ttinclude" #><#@ include file="..\_Blake2Alg.ttinclude" #>

@@ -1,3 +1,5 @@
+// Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
+
 using System.Linq;
 
 using BenchmarkDotNet.Jobs;
@@ -6,6 +8,8 @@ using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Toolchains.CsProj;
 using BenchmarkDotNet.Toolchains.DotNetCli;
+
+namespace Blake2Bench;
 
 public class MultipleJitConfig : ManualConfig
 {

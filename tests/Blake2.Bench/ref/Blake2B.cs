@@ -1,4 +1,4 @@
-﻿// BLAKE2 reference source code package - C# implementation
+// BLAKE2 reference source code package - C# implementation
 
 // Written in 2012 by Christian Winnerlein  <codesinchaos@gmail.com>
 
@@ -8,8 +8,6 @@
 
 // You should have received a copy of the CC0 Public Domain Dedication along with
 // this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-
-using System;
 
 namespace Blake2Sharp
 {

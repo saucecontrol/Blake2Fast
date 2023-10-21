@@ -1,8 +1,12 @@
+// Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
+
 using System;
 using System.Linq;
 
 using Xunit;
 using Blake2Fast;
+
+namespace Blake2Test;
 
 public class RfcSelfTest
 {

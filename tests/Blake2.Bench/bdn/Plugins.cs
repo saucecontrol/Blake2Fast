@@ -1,3 +1,5 @@
+// Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
+
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -8,6 +10,8 @@ using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+
+namespace Blake2Bench;
 
 class HashColumn : IColumn
 {

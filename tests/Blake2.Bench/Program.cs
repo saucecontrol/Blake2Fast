@@ -1,4 +1,6 @@
-﻿using System;
+// Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
+
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -6,6 +8,8 @@ using System.Security.Cryptography;
 using BenchmarkDotNet.Filters;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Attributes;
+
+namespace Blake2Bench;
 
 static class Paths
 {
