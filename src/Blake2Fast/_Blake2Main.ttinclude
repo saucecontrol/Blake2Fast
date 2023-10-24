@@ -56,7 +56,7 @@ unsafe partial struct Blake2<#= alg.suffix #>HashState : IBlake2Incremental
 	private uint c;
 	private uint outlen;
 
-	private static ReadOnlySpan<byte> ivle => new byte[] {
+	private static ReadOnlySpan<byte> ivle => [
 <#
 for (int i = 0; i < alg.iv.Length; i++) {
 	string s = "\t\t";
@@ -65,10 +65,10 @@ for (int i = 0; i < alg.iv.Length; i++) {
 	WriteLine(i < alg.iv.Length - 1 ? s : s.Substring(0, s.Length - 1));
 }
 #>
-		};
+	];
 
 #if HWINTRINSICS
-	private static ReadOnlySpan<byte> rormask => new byte[] {
+	private static ReadOnlySpan<byte> rormask => [
 <#
 if (alg.bits == 64) {
 #>
@@ -82,11 +82,11 @@ if (alg.bits == 64) {
 <#
 }
 #>
-	};
+	];
 #endif
 
 	/// <inheritdoc />
-	public int DigestLength => (int)outlen;
+	public readonly int DigestLength => (int)outlen;
 
 	private void compress(ref byte input, uint offs, uint cb)
 	{
@@ -120,6 +120,11 @@ if (alg.bits == 64) {
 
 #>
 #if HWINTRINSICS
+#if NET8_0_OR_GREATER
+				if (Avx512F.VL.IsSupported)
+					mixAvx512(sh, m);
+				else
+#endif
 <#
 if (alg.bits == 64) {
 #>
@@ -247,22 +252,16 @@ if (alg.bits == 64) {
 	{
 		ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
 
-		if (Unsafe.SizeOf<T>() > BlockBytes - c)
+		if (sizeof(T) > BlockBytes - c)
 		{
-#if BUILTIN_SPAN
-			Update(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref input), Unsafe.SizeOf<T>()));
-#else
-			var buff = (Span<byte>)stackalloc byte[Unsafe.SizeOf<T>()];
-			Unsafe.WriteUnaligned(ref buff[0], input);
-			update(buff);
-#endif
+			Update(new ReadOnlySpan<byte>(&input, sizeof(T)));
 			return;
 		}
 
 		if (f[0] != 0) ThrowHelper.HashFinalized();
 
 		Unsafe.WriteUnaligned(ref b[c], input);
-		c += (uint)Unsafe.SizeOf<T>();
+		c += (uint)sizeof(T);
 	}
 
 	private void finish(Span<byte> hash)

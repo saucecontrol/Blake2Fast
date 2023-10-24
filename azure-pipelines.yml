@@ -37,7 +37,7 @@ steps:
 - script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -s tests/runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
   displayName: Test - No AVX
   env:
-    COMPlus_EnableAVX: 0
+    DOTNET_EnableAVX: 0
 
 - task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@5
   displayName: Coverage Reports
@@ -49,7 +49,7 @@ steps:
 - task: NuGetAuthenticate@0
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
-- script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out/nuget/*.nupkg
+- script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out\nuget\*.nupkg
   displayName: Push
   condition: ne(variables['Build.Reason'], 'PullRequest')
 

@@ -3,8 +3,7 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PlatformTarget>AnyCPU</PlatformTarget>
-		<TieredCompilation>false</TieredCompilation>
-		<TargetFrameworks>net6.0;net472</TargetFrameworks>
+		<TargetFrameworks>net8.0;net6.0;net472</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>

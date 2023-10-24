@@ -15,6 +15,7 @@ file_header_template = Copyright © Clinton Ingram and Contributors.  Licensed u
 
 csharp_style_namespace_declarations = file_scoped:suggestion
 
+dotnet_diagnostic.CS8500.severity = silent
 dotnet_diagnostic.CS1573.severity = silent ; https://github.com/dotnet/roslyn/issues/40325
 
 dotnet_naming_rule.private_non_field_members_should_be_camel_case.severity = suggestion

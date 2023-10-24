@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<VersionPrefix>3.0.0</VersionPrefix>
-		<TargetFrameworks>net45;net461;net6.0;netstandard2.0;netstandard2.1;</TargetFrameworks>
+		<TargetFrameworks>net45;net461;net6.0;net8.0;netstandard2.0;netstandard2.1;</TargetFrameworks>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -32,6 +32,8 @@
 		<None Update="Blake2b\Blake2bSse4.tt" LastGenOutput="Blake2bSse4.cs" Generator="TextTemplatingFileGenerator" />
 		<None Update="Blake2s\Blake2sSse4.tt" LastGenOutput="Blake2sSse4.cs" Generator="TextTemplatingFileGenerator" />
 		<None Update="Blake2b\Blake2bAvx2.tt" LastGenOutput="Blake2bAvx2.cs" Generator="TextTemplatingFileGenerator" />
+		<None Update="Blake2b\Blake2bAvx512.tt" LastGenOutput="Blake2bAvx512.cs" Generator="TextTemplatingFileGenerator" />
+		<None Update="Blake2s\Blake2sAvx512.tt" LastGenOutput="Blake2sAvx512.cs" Generator="TextTemplatingFileGenerator" />
 		<Compile Update="Blake2b\Blake2b.cs" DependentUpon="Blake2b.tt" DesignTime="True" AutoGen="True" />
 		<Compile Update="Blake2s\Blake2s.cs" DependentUpon="Blake2s.tt" DesignTime="True" AutoGen="True" />
 		<Compile Update="Blake2b\Blake2bHashState.cs" DependentUpon="Blake2bHashState.tt" DesignTime="True" AutoGen="True" />
@@ -41,6 +43,8 @@
 		<Compile Update="Blake2b\Blake2bSse4.cs" DependentUpon="Blake2bSse4.tt" DesignTime="True" AutoGen="True" />
 		<Compile Update="Blake2s\Blake2sSse4.cs" DependentUpon="Blake2sSse4.tt" DesignTime="True" AutoGen="True" />
 		<Compile Update="Blake2b\Blake2bAvx2.cs" DependentUpon="Blake2bAvx2.tt" DesignTime="True" AutoGen="True" />
+		<Compile Update="Blake2b\Blake2bAvx512.cs" DependentUpon="Blake2bAvx512.tt" DesignTime="True" AutoGen="True" />
+		<Compile Update="Blake2s\Blake2sAvx512.cs" DependentUpon="Blake2sAvx512.tt" DesignTime="True" AutoGen="True" />
 	</ItemGroup>
 
 </Project>

@@ -21,14 +21,13 @@ static class BenchConfig
 {
 	public const int HashBytes = 5;
 	public static readonly byte[] Key = Array.Empty<byte>();
-	//public static readonly byte[] Key = new[] { (byte)'a', (byte)'b', (byte)'c' };
+	//public static readonly byte[] Key = "abc"u8.ToArray();
 
-	public static readonly List<byte[]> Data = new List<byte[]>
-	{
-		new[] { (byte)'a', (byte)'b', (byte)'c' },
+	public static readonly List<byte[]> Data = [
+		"abc"u8.ToArray(),
 		new byte[3268].RandomFill(), // size of Windows 10 srgb.icm
 		new byte[1024 * 1024 * 3].RandomFill()
-	};
+	];
 
 	public static string ToHexString(this byte[] a) => string.Concat(a.Select(x => x.ToString("X2")));
 
@@ -267,23 +266,35 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashMD5(byte[] data)
 	{
+#if NET5_0_OR_GREATER
+		return MD5.HashData(data);
+#else
 		using var md5 = MD5.Create();
 		return md5.ComputeHash(data);
+#endif
 	}
 
 	[Benchmark(Description = "SHA-256"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashSha256(byte[] data)
 	{
+#if NET5_0_OR_GREATER
+		return SHA256.HashData(data);
+#else
 		using var sha = SHA256.Create();
 		return sha.ComputeHash(data);
+#endif
 	}
 
 	[Benchmark(Description = "SHA-512"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashSha512(byte[] data)
 	{
+#if NET5_0_OR_GREATER
+		return SHA512.HashData(data);
+#else
 		using var sha = SHA512.Create();
 		return sha.ComputeHash(data);
+#endif
 	}
 }

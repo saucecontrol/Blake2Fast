@@ -3,7 +3,6 @@
 using System;
 
 #if !BUILTIN_SPAN
-using System.Linq;
 using System.Reflection;
 #else
 using System.Runtime.CompilerServices;
@@ -18,16 +17,24 @@ internal static class ThrowHelper
 	{
 		public static readonly bool IsReferenceOrContainsReferences = isOrContainsRef(typeof(T));
 
-		private static bool isOrContainsRef(Type t)
+		private static bool isOrContainsRef(Type type)
 		{
-			if (t.IsPointer)
+			if (type.IsPrimitive || type.IsPointer)
 				return false;
 
-			var ti = t.GetTypeInfo();
-			if (!ti.IsValueType)
+			if (Nullable.GetUnderlyingType(type) is Type ut)
+				type = ut;
+
+			if (!type.IsValueType)
 				return true;
 
-			return ti.DeclaredFields.Any(fi => !fi.IsStatic && fi.FieldType != t && isOrContainsRef(fi.FieldType));
+			foreach (var fi in type.GetTypeInfo().DeclaredFields)
+			{
+				if (!fi.IsStatic && fi.FieldType != type && isOrContainsRef(fi.FieldType))
+					return true;
+			}
+
+			return false;
 		}
 	}
 #endif
@@ -47,11 +54,11 @@ internal static class ThrowHelper
 
 	public static void HashNotInitialized() => throw new InvalidOperationException("Hash not initialized.  Do not create the state struct instance directly; use CreateIncrementalHasher.");
 
-	public static void NoBigEndian() => throw new PlatformNotSupportedException("Big-endian platforms not supported");
+	public static void NoBigEndian() => throw new PlatformNotSupportedException("Big-endian platforms not supported.");
 
-	public static void DigestInvalidLength(int max) => throw new ArgumentOutOfRangeException("digestLength", $"Value must be between 1 and {max}");
+	public static void DigestInvalidLength(int max) => throw new ArgumentOutOfRangeException("digestLength", $"Value must be between 1 and {max}.");
 
-	public static void KeyTooLong(int max) => throw new ArgumentException($"Key must be between 0 and {max} bytes in length", "key");
+	public static void KeyTooLong(int max) => throw new ArgumentException($"Key must be between 0 and {max} bytes in length.", "key");
 
-	public static void OutputTooSmall(int min) => throw new ArgumentException($"Output must be at least {min} bytes in length", "output");
+	public static void OutputTooSmall(int min) => throw new ArgumentException($"Output must be at least {min} bytes in length.", "output");
 }

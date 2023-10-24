@@ -10,19 +10,19 @@ namespace Blake2Test;
 
 public class RfcSelfTest
 {
-	private static readonly byte[] blake2bCheck = new byte[] {
+	private static readonly byte[] blake2bCheck = [
 		0xC2, 0x3A, 0x78, 0x00, 0xD9, 0x81, 0x23, 0xBD,
 		0x10, 0xF5, 0x06, 0xC6, 0x1E, 0x29, 0xDA, 0x56,
 		0x03, 0xD7, 0x63, 0xB8, 0xBB, 0xAD, 0x2E, 0x73,
 		0x7F, 0x5E, 0x76, 0x5A, 0x7B, 0xCC, 0xD4, 0x75
-	};
+	];
 
-	private static readonly byte[] blake2sCheck = new byte[] {
+	private static readonly byte[] blake2sCheck = [
 		0x6A, 0x41, 0x1F, 0x08, 0xCE, 0x25, 0xAD, 0xCD,
 		0xFB, 0x02, 0xAB, 0xA6, 0x41, 0x45, 0x1C, 0xEC,
 		0x53, 0xC5, 0x98, 0xB2, 0x4F, 0x4F, 0xC7, 0x87,
 		0xFB, 0xDC, 0x88, 0x79, 0x7F, 0x4C, 0x1D, 0xFE
-	};
+	];
 
 	private static byte[] getTestSequence(int len)
 	{
@@ -87,13 +87,13 @@ public class RfcSelfTest
 			var key = getTestSequence(diglen);
 
 			Blake2b.ComputeAndWriteHash(diglen, msg, buff);
-			inc.Update(buff.Slice(0, diglen));
+			inc.Update(buff[..diglen]);
 
 			Blake2b.ComputeAndWriteHash(diglen, key, msg, buff);
-			inc.Update(buff.Slice(0, diglen));
+			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff.Slice(0, len).ToArray() : Array.Empty<byte>();
+		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [];
 	}
 
 	private static byte[] blake2sNoAllocSelfTest()
@@ -108,13 +108,13 @@ public class RfcSelfTest
 			var key = getTestSequence(diglen);
 
 			Blake2s.ComputeAndWriteHash(diglen, msg, buff);
-			inc.Update(buff.Slice(0, diglen));
+			inc.Update(buff[..diglen]);
 
 			Blake2s.ComputeAndWriteHash(diglen, key, msg, buff);
-			inc.Update(buff.Slice(0, diglen));
+			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff.Slice(0, len).ToArray() : Array.Empty<byte>();
+		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [];
 	}
 
 	private static byte[] blake2bHmacSelfTest()
@@ -135,10 +135,10 @@ public class RfcSelfTest
 			}
 		}
 
-		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		inc.TransformFinalBlock([ ], 0, 0);
 		var hash = inc.Hash;
 
-		return hash;
+		return hash!;
 	}
 
 	private static byte[] blake2sHmacSelfTest()
@@ -159,7 +159,7 @@ public class RfcSelfTest
 			}
 		}
 
-		inc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+		inc.TransformFinalBlock([ ], 0, 0);
 		var hash = inc.Hash;
 
 		return hash;

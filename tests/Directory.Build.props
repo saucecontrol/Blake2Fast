@@ -15,8 +15,8 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Coverage'">
-		<PackageReference Include="coverlet.collector" Version="3.0.2" PrivateAssets="all" />
-		<PackageReference Include="coverlet.msbuild" Version="3.0.2" PrivateAssets="all" />
+		<PackageReference Include="coverlet.collector" Version="6.0.0" PrivateAssets="all" />
+		<PackageReference Include="coverlet.msbuild" Version="6.0.0" PrivateAssets="all" />
 	</ItemGroup>
 
 </Project>

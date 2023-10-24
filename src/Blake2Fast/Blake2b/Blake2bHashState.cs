@@ -40,7 +40,7 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 	private uint c;
 	private uint outlen;
 
-	private static ReadOnlySpan<byte> ivle => new byte[] {
+	private static ReadOnlySpan<byte> ivle => [
 		0x08, 0xC9, 0xBC, 0xF3, 0x67, 0xE6, 0x09, 0x6A,
 		0x3B, 0xA7, 0xCA, 0x84, 0x85, 0xAE, 0x67, 0xBB,
 		0x2B, 0xF8, 0x94, 0xFE, 0x72, 0xF3, 0x6E, 0x3C,
@@ -49,17 +49,17 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 		0x1F, 0x6C, 0x3E, 0x2B, 0x8C, 0x68, 0x05, 0x9B,
 		0x6B, 0xBD, 0x41, 0xFB, 0xAB, 0xD9, 0x83, 0x1F,
 		0x79, 0x21, 0x7E, 0x13, 0x19, 0xCD, 0xE0, 0x5B
-		};
+	];
 
 #if HWINTRINSICS
-	private static ReadOnlySpan<byte> rormask => new byte[] {
+	private static ReadOnlySpan<byte> rormask => [
 		3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10, //r24
 		2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9  //r16
-	};
+	];
 #endif
 
 	/// <inheritdoc />
-	public int DigestLength => (int)outlen;
+	public readonly int DigestLength => (int)outlen;
 
 	private void compress(ref byte input, uint offs, uint cb)
 	{
@@ -80,6 +80,11 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 
 				ulong* m = (ulong*)pin;
 #if HWINTRINSICS
+#if NET8_0_OR_GREATER
+				if (Avx512F.VL.IsSupported)
+					mixAvx512(sh, m);
+				else
+#endif
 				if (Avx2.IsSupported)
 					mixAvx2(sh, m);
 				else
@@ -172,22 +177,16 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 	{
 		ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
 
-		if (Unsafe.SizeOf<T>() > BlockBytes - c)
+		if (sizeof(T) > BlockBytes - c)
 		{
-#if BUILTIN_SPAN
-			Update(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref input), Unsafe.SizeOf<T>()));
-#else
-			var buff = (Span<byte>)stackalloc byte[Unsafe.SizeOf<T>()];
-			Unsafe.WriteUnaligned(ref buff[0], input);
-			update(buff);
-#endif
+			Update(new ReadOnlySpan<byte>(&input, sizeof(T)));
 			return;
 		}
 
 		if (f[0] != 0) ThrowHelper.HashFinalized();
 
 		Unsafe.WriteUnaligned(ref b[c], input);
-		c += (uint)Unsafe.SizeOf<T>();
+		c += (uint)sizeof(T);
 	}
 
 	private void finish(Span<byte> hash)

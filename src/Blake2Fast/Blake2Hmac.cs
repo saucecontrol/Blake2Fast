@@ -51,9 +51,9 @@ internal sealed class Blake2Hmac : HMAC
 	{
 		var key = new ReadOnlySpan<byte>(KeyValue);
 
-		return alg == Algorithm.Blake2b ?
-			Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key) :
-			Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
+		return alg == Algorithm.Blake2b
+			? Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key)
+			: Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
 	}
 }
 #endif

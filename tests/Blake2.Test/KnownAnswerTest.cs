@@ -12,25 +12,17 @@ using Blake2Fast;
 namespace Blake2Test;
 
 #pragma warning disable CS0169, CS0649, CA1815, IDE0051
-public struct KatEntry
+public struct KatEntry(JsonObject o)
 {
-	public string Alg;
-	public byte[] Key;
-	public byte[] Data;
-	public byte[] Digest;
-
-	public KatEntry(JsonObject o)
-	{
-		Alg = o["hash"];
-		Data = getBytes(o["in"]);
-		Key = getBytes(o["key"]);
-		Digest = getBytes(o["out"]);
-	}
+	public string Alg = o["hash"];
+	public byte[] Key = getBytes(o["key"]);
+	public byte[] Data = getBytes(o["in"]);
+	public byte[] Digest = getBytes(o["out"]);
 
 	private static byte[] getBytes(string s)
 	{
 		if (string.IsNullOrEmpty(s))
-			return Array.Empty<byte>();
+			return [ ];
 
 		var bytes = new byte[s.Length / 2];
 		for (int i = 0; i < bytes.Length; i++)
@@ -60,6 +52,8 @@ public struct KatEntry
 
 public class KnownAnswerTest
 {
+	// DateTime is Auto layout, so this struct size differs between runtimes (net7+ is 12 bytes, older is 16 bytes)
+	[StructLayout(LayoutKind.Sequential, Pack = 4)]
 	struct TestStruct
 	{
 		public static readonly KnownAnswerTest Test = new();
@@ -72,12 +66,12 @@ public class KnownAnswerTest
 	{
 		bool res = MemoryMarshal.TryRead(span, out val);
 		if (res)
-			span = span.Slice(sizeof(T));
+			span = span[sizeof(T)..];
 
 		return res;
 	}
 
-	private static ReadOnlySpan<byte> compute(IBlake2Incremental impl, ReadOnlySpan<byte> data)
+	private static byte[] compute(IBlake2Incremental impl, ReadOnlySpan<byte> data)
 	{
 		// every read and write after this will be unaligned
 		if (tryReadAndAdvance(out byte byteVal, ref data))
@@ -90,8 +84,8 @@ public class KnownAnswerTest
 		// advance to just shy of a block boundary to make sure we split a value across blocks sometimes
 		if (data.Length >= sizeof(long) * 15)
 		{
-			impl.Update(MemoryMarshal.Cast<byte, long>(data.Slice(0, sizeof(long) * 15)));
-			data = data.Slice(sizeof(long) * 15);
+			impl.Update(MemoryMarshal.Cast<byte, long>(data[..(sizeof(long) * 15)]));
+			data = data[(sizeof(long) * 15)..];
 		}
 
 		// a non-blittable value type
@@ -112,7 +106,7 @@ public class KnownAnswerTest
 	public void KatBlake2b(KatEntry ka)
 	{
 		var hash = compute(Blake2b.CreateIncrementalHasher(), ka.Data);
-		Assert.True(hash.SequenceEqual(ka.Digest));
+		Assert.Equal(ka.Digest, hash);
 	}
 
 	[Theory]
@@ -120,7 +114,7 @@ public class KnownAnswerTest
 	public void KatBlake2s(KatEntry ka)
 	{
 		var hash = compute(Blake2s.CreateIncrementalHasher(), ka.Data);
-		Assert.True(hash.SequenceEqual(ka.Digest));
+		Assert.Equal(ka.Digest, hash);
 	}
 
 	[Theory]
@@ -128,7 +122,7 @@ public class KnownAnswerTest
 	public void KatBlake2bKeyed(KatEntry ka)
 	{
 		var hash = compute(Blake2b.CreateIncrementalHasher(ka.Key), ka.Data);
-		Assert.True(hash.SequenceEqual(ka.Digest));
+		Assert.Equal(ka.Digest, hash);
 	}
 
 	[Theory]
@@ -136,7 +130,7 @@ public class KnownAnswerTest
 	public void KatBlake2sKeyed(KatEntry ka)
 	{
 		var hash = compute(Blake2s.CreateIncrementalHasher(ka.Key), ka.Data);
-		Assert.True(hash.SequenceEqual(ka.Digest));
+		Assert.Equal(ka.Digest, hash);
 	}
 
 	[Fact]

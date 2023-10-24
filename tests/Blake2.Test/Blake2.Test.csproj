@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net461</TargetFrameworks>
+		<TargetFrameworks>net8.0;net6.0;net461</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -10,6 +10,10 @@
 		<PackageReference Include="xunit" Version="2.4.2" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" PrivateAssets="all" />
 		<DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+	</ItemGroup>
+
+	<ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+		<PackageReference Include="IndexRange" Version="1.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
