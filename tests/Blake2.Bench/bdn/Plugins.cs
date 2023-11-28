@@ -34,7 +34,7 @@ class HashColumn : IColumn
 	{
 		var method = benchmark.Descriptor.WorkloadMethod;
 		var instance = Activator.CreateInstance(method.DeclaringType);
-		var hash = ((byte[])method.Invoke(instance, new[] { benchmark.Parameters[0].Value })).ToHexString();
+		var hash = ((byte[])method.Invoke(instance, [ benchmark.Parameters[0].Value ])).ToHexString();
 		if (hash.Length > 16)
 			hash = hash.Substring(0, 12) + "...";
 		return hash;

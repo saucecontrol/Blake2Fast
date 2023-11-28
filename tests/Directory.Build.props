@@ -4,14 +4,17 @@
 
 	<PropertyGroup>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
+		<RunSettingsFilePath>$(MSBuildThisFileDirectory).runsettings</RunSettingsFilePath>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Coverage'">
 		<CollectCoverage>true</CollectCoverage>
 		<UseSourceLink>true</UseSourceLink>
 		<CoverletOutputFormat>opencover</CoverletOutputFormat>
-		<CoverletOutput>$(MSBuildThisFileDirectory)..\out\coverage\opencover$(CoverageFileSuffix).xml</CoverletOutput>
+		<CoverletOutput>$(RepositoryRoot)out\coverage\opencover$(CoverageFileSuffix).xml</CoverletOutput>
 		<Exclude>[$(AssemblyName)],[*]System.*</Exclude>
+		<VSTestLogger>trx</VSTestLogger>
+		<VSTestResultsDirectory>$(RepositoryRoot)out\testresults\</VSTestResultsDirectory>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Coverage'">

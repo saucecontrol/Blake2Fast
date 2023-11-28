@@ -11,7 +11,6 @@ using Blake2Fast;
 
 namespace Blake2Test;
 
-#pragma warning disable CS0169, CS0649, CA1815, IDE0051
 public struct KatEntry(JsonObject o)
 {
 	public string Alg = o["hash"];

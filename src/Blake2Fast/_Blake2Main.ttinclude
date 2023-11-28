@@ -61,7 +61,7 @@ unsafe partial struct Blake2<#= alg.suffix #>HashState : IBlake2Incremental
 for (int i = 0; i < alg.iv.Length; i++) {
 	string s = "\t\t";
 	for (int j = 0; j < alg.bits / 8; j++)
-		s += $"{(j > 0 ? " " : null)}0x{(byte)(alg.iv[i] >> (j * 8)):X2},";
+		s += $"{(j > 0 ? " " : null)}0x{(byte)(alg.iv[i] >> (j * 8)):x2},";
 	WriteLine(i < alg.iv.Length - 1 ? s : s.Substring(0, s.Length - 1));
 }
 #>

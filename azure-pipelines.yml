@@ -8,13 +8,17 @@ trigger:
     - readme.md
 
 pool:
-  vmImage: windows-latest
+  vmImage: ubuntu-latest
 
 variables:
   azureNuGet: https://pkgs.dev.azure.com/saucecontrol/Blake2Fast/_packaging/blake2fast_ci/nuget/v3/index.json
   disable.coverage.autogenerate: true
 
 steps:
+- checkout: self
+  fetchDepth: 1
+  fetchTags: false
+
 - task: UseDotNet@2
   displayName: Ensure 8.0 SDK
   inputs:
@@ -31,25 +35,26 @@ steps:
 - script: dotnet build src/Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
   displayName: Build
 
-- script: dotnet test tests/Blake2.Test -c Coverage -s tests/runsettings --logger trx --collect "XPlat Code Coverage"
+- script: dotnet test tests/Blake2.Test -c Coverage
   displayName: Test
 
-- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -s tests/runsettings -p:CoverageFileSuffix=_noavx --logger trx --collect "XPlat Code Coverage"
+- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -e DOTNET_EnableAVX=0 -p:CoverageFileSuffix=_noavx --no-build
   displayName: Test - No AVX
-  env:
-    DOTNET_EnableAVX: 0
+
+- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -e DOTNET_EnableHWIntrinsic=0 -p:CoverageFileSuffix=_nosimd --no-build
+  displayName: Test - No SIMD
 
 - task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@5
   displayName: Coverage Reports
   inputs:
     reports: out/coverage/opencover*.xml
     targetdir: out/coverage/reports
-    reporttypes: HtmlInline_AzurePipelines;Cobertura;Badges
+    reporttypes: HtmlInline_AzurePipelines;Cobertura
 
 - task: NuGetAuthenticate@0
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
-- script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out\nuget\*.nupkg
+- script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out/nuget/*.nupkg
   displayName: Push
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
@@ -60,4 +65,4 @@ steps:
 
 - task: PublishCodeCoverageResults@2
   inputs:
-    summaryFileLocation: out/coverage/reports/cobertura.xml
+    summaryFileLocation: out/coverage/reports/Cobertura.xml

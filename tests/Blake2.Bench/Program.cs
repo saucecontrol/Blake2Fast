@@ -20,7 +20,7 @@ static class Paths
 static class BenchConfig
 {
 	public const int HashBytes = 5;
-	public static readonly byte[] Key = Array.Empty<byte>();
+	public static readonly byte[] Key = [ ];
 	//public static readonly byte[] Key = "abc"u8.ToArray();
 
 	public static readonly List<byte[]> Data = [
@@ -44,7 +44,13 @@ class Program
 	{
 		if (!Blake2Rfc.SelftTest.blake2b_selftest() || !Blake2Rfc.SelftTest.blake2s_selftest())
 		{
-			Console.WriteLine("Error: RFC self-test failed");
+			Console.WriteLine("Error: BLAKE2 RFC self-test failed.");
+			return;
+		}
+
+		if (!Blake3Ref.SelfTest())
+		{
+			Console.WriteLine("Error: BLAKE3 ref self-test failed.");
 			return;
 		}
 
@@ -62,16 +68,16 @@ class Program
 				singleRun();
 				break;
 			case ConsoleKey.D1:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).AddFilter(new AllCategoriesFilter(new[] { "OtherHash" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).AddFilter(new AllCategoriesFilter([ "OtherHash" ])));
 				break;
 			case ConsoleKey.D2:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter(new[] { "Blake2b" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter([ "Blake2b" ])));
 				break;
 			case ConsoleKey.D3:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter(new[] { "Blake2s" })));
+				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
 				break;
 			case ConsoleKey.D4:
-				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter(new[] { "JitTest" })));
+				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter([ "JitTest" ])));
 				break;
 			default:
 				Console.WriteLine("Unrecognized command.");

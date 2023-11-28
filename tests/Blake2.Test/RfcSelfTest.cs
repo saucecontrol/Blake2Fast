@@ -93,7 +93,7 @@ public class RfcSelfTest
 			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [];
+		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [ ];
 	}
 
 	private static byte[] blake2sNoAllocSelfTest()
@@ -114,7 +114,7 @@ public class RfcSelfTest
 			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [];
+		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [ ];
 	}
 
 	private static byte[] blake2bHmacSelfTest()

@@ -6,7 +6,7 @@
 		<RepositoryUrl>https://github.com/saucecontrol/Blake2Fast</RepositoryUrl>
 		<Copyright>Copyright © 2018-$([System.DateTime]::Today.Year) $(Authors)</Copyright>
 		<Title>High-Performance BLAKE2 Hashing for .NET</Title>
-		<Description>Optimized implementations of the BLAKE2b and BLAKE2s cryptographic hashing algorithms. Uses SSE2-AVX2 SIMD Hardware Intrinsics support on .NET Core 3.1 and .NET 5+</Description>
+		<Description>Optimized implementations of the BLAKE2b and BLAKE2s cryptographic hashing algorithms. Uses SSE2 - AVX-512 SIMD Hardware Intrinsics support on modern .NET</Description>
 
 		<RootNamespace>$(MSBuildProjectName)</RootNamespace>
 		<AssemblyName>$(Owners).$(MSBuildProjectName)</AssemblyName>
@@ -17,7 +17,7 @@
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
-		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 SIMD HashAlgorithm HMAC Cryptography</PackageTags>
+		<PackageTags>BLAKE2 Hash BLAKE2b BLAKE2s SSE2 AVX2 AVX-512 SIMD HashAlgorithm HMAC Cryptography</PackageTags>
 		<PackageReleaseNotes>See $(RepositoryUrl)/releases for release-specific notes.</PackageReleaseNotes>
 
 		<LangVersion>12</LangVersion>

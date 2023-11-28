@@ -6,7 +6,6 @@
 //		Manual changes will be overwritten if the code is regenerated.
 //	</auto-generated>
 //------------------------------------------------------------------------------
-#pragma warning disable CS1573 // missing param XML
 
 using System;
 
@@ -38,7 +37,7 @@ static class Blake2s
 	/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 	public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => ComputeHash(DefaultDigestLength, key, input);
 
-	/// <summary>Perform an all-at-once BLAKE2s hash computation.</summary>
+	/// <summary>Perform a one-shot BLAKE2s hash computation.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 32.</param>
 	/// <param name="key">0 to 32 bytes of input for initializing a keyed hash.</param>
@@ -62,7 +61,7 @@ static class Blake2s
 	/// <param name="output">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <see cref="DefaultDigestLength" />(32) bytes.</param>
 	public static void ComputeAndWriteHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => ComputeAndWriteHash(DefaultDigestLength, key, input, output);
 
-	/// <summary>Perform an all-at-once BLAKE2s hash computation and write the hash digest to <paramref name="output" />.</summary>
+	/// <summary>Perform a one-shot BLAKE2s hash computation and write the hash digest to <paramref name="output" />.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 32.</param>
 	/// <param name="key">0 to 32 bytes of input for initializing a keyed hash.</param>

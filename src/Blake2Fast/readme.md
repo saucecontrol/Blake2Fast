@@ -3,15 +3,15 @@ Blake2Fast
 
 These [RFC 7693](https://tools.ietf.org/html/rfc7693)-compliant BLAKE2 implementations have been tuned for high speed and low memory usage.  `Span<byte>` is used throughout for lower memory overhead compared to `byte[]` based APIs.
 
-On modern .NET, Blake2Fast includes SIMD-accelerated (SSE2-AVX2) implementations of both BLAKE2b and BLAKE2s.
+On modern .NET, Blake2Fast includes SIMD-accelerated (SSE2 - AVX-512) implementations of both BLAKE2b and BLAKE2s.
 
 
 Usage
 -----
 
-### All-at-Once Hashing
+### One-Shot Hashing
 
-The simplest way to calculate a hash is the all-at-once `ComputeHash` method.
+The simplest way to calculate a hash is the one-shot `ComputeHash` method.
 
 ```C#
 var hash = Blake2b.ComputeHash(data);

@@ -2,6 +2,6 @@
 	<RunConfiguration>
 		<TargetPlatform>x64</TargetPlatform>
 		<DisableAppDomain>true</DisableAppDomain>
-		<ResultsDirectory>..\out\testresults</ResultsDirectory>
+		<ResultsDirectory>../out/testresults</ResultsDirectory>
 	</RunConfiguration>
 </RunSettings>
