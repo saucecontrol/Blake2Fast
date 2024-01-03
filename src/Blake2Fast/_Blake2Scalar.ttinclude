@@ -1,5 +1,3 @@
-<#@ assembly name="System.Core" #>
-<#@ import namespace="System.Linq" #>
 // Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
 
 //------------------------------------------------------------------------------

@@ -85,8 +85,8 @@ unsafe partial struct Blake2sHashState : IBlake2Incremental
 					mixAvx512(sh, m);
 				else
 #endif
-				if (Sse41.IsSupported)
-					mixSse41(sh, m);
+				if (Ssse3.IsSupported)
+					mixSsse3(sh, m);
 				else
 #endif
 					mixScalar(sh, m);

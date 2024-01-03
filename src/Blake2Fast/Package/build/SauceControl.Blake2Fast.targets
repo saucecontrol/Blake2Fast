@@ -1,0 +1,5 @@
+<Project InitialTargets="_Blake2FastTfmSupportWarning">
+	<Target Name="_Blake2FastTfmSupportWarning" Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
+		<Warning Text="Blake2Fast is no longer hardware accelerated on $(TargetFramework). Upgrade your TargetFramework to net6.0 or later for the best performance. You may also set &lt;SuppressTfmSupportBuildWarnings&gt;true&lt;/SuppressTfmSupportBuildWarnings&gt; in the project file to ignore this warning." />
+	</Target>
+</Project>

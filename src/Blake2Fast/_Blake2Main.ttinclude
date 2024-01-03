@@ -131,12 +131,18 @@ if (alg.bits == 64) {
 				if (Avx2.IsSupported)
 					mixAvx2(sh, m);
 				else
-<#
-}
-#>
 				if (Sse41.IsSupported)
 					mixSse41(sh, m);
 				else
+<#
+} else {
+#>
+				if (Ssse3.IsSupported)
+					mixSsse3(sh, m);
+				else
+<#
+}
+#>
 #endif
 					mixScalar(sh, m);
 
