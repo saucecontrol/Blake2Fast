@@ -51,7 +51,7 @@ steps:
     targetdir: out/coverage/reports
     reporttypes: HtmlInline_AzurePipelines;Cobertura
 
-- task: NuGetAuthenticate@0
+- task: NuGetAuthenticate@1
   condition: ne(variables['Build.Reason'], 'PullRequest')
 
 - script: dotnet nuget push --source $(azureNuGet) --api-key AzureArtifacts out/nuget/*.nupkg
