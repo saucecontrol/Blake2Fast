@@ -402,9 +402,9 @@ unsafe partial struct Blake2sHashState
 		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
 
 		//ROUND 8
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_11_10).AsUInt32();
-		t1 = Sse.Shuffle(t0.AsSingle(), m3.AsSingle(), 0b_01_00_11_01).AsUInt32();
-		b0 = Sse2.Shuffle(t1, 0b_00_10_01_11);
+		t0 = Sse2.Shuffle(m3.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
+		t1 = Sse2.Shuffle(m3.AsDouble(), m0.AsDouble(), 0b_10).AsUInt32();
+		b0 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_11_01).AsUInt32();
 
 		//G1
 		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
@@ -480,9 +480,9 @@ unsafe partial struct Blake2sHashState
 		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
 		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
 
-		t0 = Sse.Shuffle(m0.AsSingle(), m2.AsSingle(), 0b_11_10_01_00).AsUInt32();
-		t1 = Sse.Shuffle(t0.AsSingle(), m3.AsSingle(), 0b_01_00_10_01).AsUInt32();
-		b0 = Sse2.Shuffle(t1, 0b_00_11_10_01);
+		t0 = Sse2.UnpackLow(m3, m0);
+		t1 = Sse2.Shuffle(m3.AsDouble(), m2.AsDouble(), 0b_10).AsUInt32();
+		b0 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_11_10_00_10).AsUInt32();
 
 		//G1
 		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);

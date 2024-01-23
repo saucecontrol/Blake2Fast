@@ -115,8 +115,7 @@ public static class Blake3Ref {
         block_len,
         flags,
     };
-    var block = (Span<uint>)stackalloc uint[16];
-    new ReadOnlySpan<uint>(block_words, 16).CopyTo(block);
+    var block = new Span<uint>(block_words, 16);
 
     round_function(state, block); // round 1
     permute(block);
@@ -137,19 +136,7 @@ public static class Blake3Ref {
       state[i + 8] ^= chaining_value[i]; // Feed forward is optional if not length extending
     }
 
-    state.CopyTo(@out);
-  }
-
-  static unsafe void words_from_little_endian_bytes(void* bytes,
-                                                    nuint bytes_len,
-                                                    uint* @out) {
-    byte* u8_ptr = (byte*)bytes;
-    for (nuint i = 0; i < (bytes_len / 4); i++) {
-      @out[i] = ((uint)(*u8_ptr++));
-      @out[i] += ((uint)(*u8_ptr++)) << 8;
-      @out[i] += ((uint)(*u8_ptr++)) << 16;
-      @out[i] += ((uint)(*u8_ptr++)) << 24;
-    }
+    state.Slice(0, @out.Length).CopyTo(@out);
   }
 
   // Each chunk or parent node can produce either an 8-word chaining value or, by
@@ -166,10 +153,8 @@ public static class Blake3Ref {
 #pragma warning restore 8981
 
   static unsafe void output_chaining_value(output* self, Span<uint> @out) {
-    var out16 = (Span<uint>)stackalloc uint[16];
     compress(self->input_chaining_value, self->block_words, self->counter,
-             self->block_len, self->flags, out16);
-    out16.Slice(0, @out.Length).CopyTo(@out);
+             self->block_len, self->flags, @out);
   }
 
   static unsafe void output_root_bytes(output* self, void* @out,
@@ -221,19 +206,14 @@ public static class Blake3Ref {
   static unsafe void chunk_state_update(_blake3_chunk_state* self,
                                         void* input, nuint input_len) {
     byte* input_u8 = (byte*)input;
-    var out16 = (Span<uint>)stackalloc uint[16];
     while (input_len > 0) {
       // If the block buffer is full, compress it and clear it. More input is
       // coming, so this compression is not CHUNK_END.
       if (self->block_len == BLAKE3_BLOCK_LEN) {
-        //uint block_words[16];
-        //words_from_little_endian_bytes(self->block, BLAKE3_BLOCK_LEN,
-        //                               block_words);
         uint* block_words = (uint*)self->block;
         compress(self->chaining_value, block_words, self->chunk_counter,
                  BLAKE3_BLOCK_LEN, self->flags | chunk_state_start_flag(self),
-                 out16);
-        out16.Slice(0, 8).CopyTo(new Span<uint>(self->chaining_value, 8));
+                 new Span<uint>(self->chaining_value, 8));
         self->blocks_compressed++;
         Unsafe.InitBlock(self->block, 0, BLAKE3_BLOCK_LEN);
         self->block_len = 0;
@@ -255,8 +235,6 @@ public static class Blake3Ref {
   static unsafe output chunk_state_output(_blake3_chunk_state* self) {
     output ret;
     Unsafe.CopyBlockUnaligned(ret.input_chaining_value, self->chaining_value, 8 * sizeof(uint));
-    //words_from_little_endian_bytes(self->block, sizeof(self->block),
-    //                               ret.block_words);
     Unsafe.CopyBlockUnaligned(ret.block_words, self->block, BLAKE3_BLOCK_LEN);
     ret.counter = self->chunk_counter;
     ret.block_len = (uint)self->block_len;
@@ -270,8 +248,8 @@ public static class Blake3Ref {
                                      uint flags) {
     output ret;
     Unsafe.CopyBlockUnaligned(ret.input_chaining_value, key_words, 8 * sizeof(uint));
-    Unsafe.CopyBlockUnaligned(&ret.block_words[0], left_child_cv, 8 * 4);
-    Unsafe.CopyBlockUnaligned(&ret.block_words[8], right_child_cv, 8 * 4);
+    Unsafe.CopyBlockUnaligned(&ret.block_words[0], left_child_cv, 8 * sizeof(uint));
+    Unsafe.CopyBlockUnaligned(&ret.block_words[8], right_child_cv, 8 * sizeof(uint));
     ret.counter = 0; // Always 0 for parent nodes.
     ret.block_len =
         BLAKE3_BLOCK_LEN; // Always BLAKE3_BLOCK_LEN (64) for parent nodes.
@@ -306,8 +284,6 @@ public static class Blake3Ref {
   // Construct a new `Hasher` for the keyed hash function.
   static unsafe void blake3_hasher_init_keyed(blake3_hasher* self,
                                 byte* key) {
-    //uint key_words[8];
-    //words_from_little_endian_bytes(key, BLAKE3_KEY_LEN, key_words);
     uint* key_words = (uint*)key;
     hasher_init_internal(self, key_words, KEYED_HASH);
   }
@@ -320,16 +296,13 @@ public static class Blake3Ref {
     blake3_hasher_update(&context_hasher, context, (uint)new ReadOnlySpan<byte>(context, int.MaxValue).IndexOf((byte)0));
     byte* context_key = stackalloc byte[BLAKE3_KEY_LEN];
     blake3_hasher_finalize(&context_hasher, context_key, BLAKE3_KEY_LEN);
-    //uint context_key_words[8];
-    //words_from_little_endian_bytes(context_key, BLAKE3_KEY_LEN,
-    //                               context_key_words);
     uint* context_key_words = (uint*)context_key;
     hasher_init_internal(self, context_key_words, DERIVE_KEY_MATERIAL);
   }
 
   static unsafe void hasher_push_stack(blake3_hasher* self,
                                        uint* cv) {
-    Unsafe.CopyBlockUnaligned(&self->cv_stack[(nuint)self->cv_stack_len * 8], cv, 8 * 4);
+    Unsafe.CopyBlockUnaligned(&self->cv_stack[(nuint)self->cv_stack_len * 8], cv, 8 * sizeof(uint));
     self->cv_stack_len++;
   }
 

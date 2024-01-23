@@ -1,5 +1,6 @@
 // Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
 
+using System.IO;
 using System.Linq;
 
 using BenchmarkDotNet.Jobs;
@@ -11,7 +12,27 @@ using BenchmarkDotNet.Toolchains.DotNetCli;
 
 namespace Blake2Bench;
 
-public class MultipleJitConfig : ManualConfig
+public class CustomConfig : ManualConfig
+{
+	public CustomConfig(bool includeHash = false)
+	{
+		var outDir = Directory.GetParent(typeof(CustomConfig).Assembly.Location);
+		while (outDir.Name != "out")
+			outDir = outDir.Parent;
+
+		AddLogger(DefaultConfig.Instance.GetLoggers().ToArray());
+		AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().Where(cp => cp.GetType().Name != "ParamsColumnProvider").ToArray());
+		AddExporter(DefaultConfig.Instance.GetExporters().ToArray());
+		AddDiagnoser(MemoryDiagnoser.Default);
+		if (includeHash) AddColumn(new HashColumn());
+		AddColumn(new DataLengthColumn());
+		Options |= ConfigOptions.DisableOptimizationsValidator;
+		Orderer = ByPlatformByDataLengthOrderer.Instance;
+		ArtifactsPath = Path.Combine(outDir.FullName, "bdn", "Blake2.Bench");
+	}
+}
+
+public class MultipleJitConfig : CustomConfig
 {
 	public MultipleJitConfig()
 	{
@@ -27,32 +48,13 @@ public class MultipleJitConfig : ManualConfig
 
 		AddJob(Job.ShortRun.WithRuntime(ClrRuntime.Net472).WithJit(Jit.RyuJit).WithPlatform(Platform.X64).WithId("net472").AsBaseline());
 		AddJob(Job.ShortRun.WithRuntime(ClrRuntime.Net472).WithJit(Jit.LegacyJit).WithPlatform(Platform.X86).WithId("net472").AsBaseline());
-
-		AddLogger(DefaultConfig.Instance.GetLoggers().ToArray());
-		AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().Where(cp => cp.GetType().Name != "ParamsColumnProvider").ToArray());
-		AddExporter(DefaultConfig.Instance.GetExporters().ToArray());
-		AddDiagnoser(MemoryDiagnoser.Default);
-		AddColumn(new DataLengthColumn());
-		Options |= ConfigOptions.DisableOptimizationsValidator;
-		Orderer = ByPlatformByDataLengthOrderer.Instance;
-		ArtifactsPath = @"..\..\out\bdn\Blake2.Bench";
 	}
 }
 
-public class AllowNonOptimizedConfig : ManualConfig
+public class DefaultCustomConfig : CustomConfig
 {
-	public AllowNonOptimizedConfig(bool includeHash = true)
+	public DefaultCustomConfig(bool includeHash = true) : base(includeHash)
 	{
 		AddJob(Job.ShortRun);
-
-		AddLogger(DefaultConfig.Instance.GetLoggers().ToArray());
-		AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().Where(cp => cp.GetType().Name != "ParamsColumnProvider").ToArray());
-		AddExporter(DefaultConfig.Instance.GetExporters().ToArray());
-		AddDiagnoser(MemoryDiagnoser.Default);
-		if (includeHash) AddColumn(new HashColumn());
-		AddColumn(new DataLengthColumn());
-		Options |= ConfigOptions.DisableOptimizationsValidator;
-		Orderer = ByPlatformByDataLengthOrderer.Instance;
-		ArtifactsPath = @"..\..\out\bdn\Blake2.Bench";
 	}
 }

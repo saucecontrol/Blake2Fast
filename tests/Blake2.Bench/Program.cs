@@ -54,27 +54,29 @@ class Program
 			return;
 		}
 
-		Console.WriteLine(@"Choose a benchmark:
+		Console.WriteLine("""
+			Choose a benchmark:
 
-0. Just test each BLAKE2 library once, don't benchmark
-1. Blake2Fast vs .NET in-box algorithms (MD5 and SHA2)
-2. Blake2Fast BLAKE2b vs 3rd party libraries
-3. Blake2Fast BLAKE2s vs 3rd party libraries
-4. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
-");
+			0. Just test each BLAKE2 library once, don't benchmark
+			1. Blake2Fast vs .NET in-box algorithms (MD5 and SHA2)
+			2. Blake2Fast BLAKE2b vs 3rd party libraries
+			3. Blake2Fast BLAKE2s vs 3rd party libraries
+			4. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
+			"""
+		);
 		switch (Console.ReadKey().Key)
 		{
 			case ConsoleKey.D0:
 				singleRun();
 				break;
 			case ConsoleKey.D1:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig(false).AddFilter(new AllCategoriesFilter([ "OtherHash" ])));
+				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "OtherHash" ])));
 				break;
 			case ConsoleKey.D2:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter([ "Blake2b" ])));
+				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2b" ])));
 				break;
 			case ConsoleKey.D3:
-				BenchmarkRunner.Run<Blake2Bench>(new AllowNonOptimizedConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
+				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
 				break;
 			case ConsoleKey.D4:
 				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter([ "JitTest" ])));

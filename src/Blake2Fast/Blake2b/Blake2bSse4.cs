@@ -239,7 +239,7 @@ unsafe partial struct Blake2bHashState
 		row3h = t1;
 
 		b0 = Sse2.UnpackHigh(m2, m0);
-		b1 = Sse41.Blend(m0.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m0.AsSingle(), m5.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G1
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -262,7 +262,7 @@ unsafe partial struct Blake2bHashState
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
 		b0 = Sse2.Shuffle(m1.AsDouble(), m6.AsDouble(), 0b_01).AsUInt64();
-		b1 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m1.AsSingle(), m3.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -324,7 +324,7 @@ unsafe partial struct Blake2bHashState
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
 		b0 = Sse2.UnpackLow(m4, m0);
-		b1 = Sse41.Blend(m1.AsUInt16(), m6.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m1.AsSingle(), m6.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -385,7 +385,7 @@ unsafe partial struct Blake2bHashState
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
 		b0 = Sse2.UnpackLow(m2, m7);
-		b1 = Sse41.Blend(m3.AsUInt16(), m0.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m3.AsSingle(), m0.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -569,8 +569,8 @@ unsafe partial struct Blake2bHashState
 		row2l = Ssse3.Shuffle(row2l.AsByte(), r24).AsUInt64();
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
-		b0 = Sse41.Blend(m0.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
-		b1 = Sse41.Blend(m2.AsUInt16(), m7.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b0 = Sse41.Blend(m0.AsSingle(), m3.AsSingle(), 0b_11_00).AsUInt64();
+		b1 = Sse41.Blend(m2.AsSingle(), m7.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -792,7 +792,7 @@ unsafe partial struct Blake2bHashState
 		row3h = t1;
 
 		//ROUND 7
-		b0 = Sse41.Blend(m6.AsUInt16(), m0.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b0 = Sse41.Blend(m6.AsSingle(), m0.AsSingle(), 0b_11_00).AsUInt64();
 		b1 = Sse2.Shuffle(m7.AsDouble(), m2.AsDouble(), 0b_00).AsUInt64();
 
 		//G1
@@ -854,7 +854,7 @@ unsafe partial struct Blake2bHashState
 		row3h = t1;
 
 		b0 = Sse2.Shuffle(m4.AsDouble(), m0.AsDouble(), 0b_00).AsUInt64();
-		b1 = Sse41.Blend(m3.AsUInt16(), m4.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m3.AsSingle(), m4.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G1
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -916,7 +916,7 @@ unsafe partial struct Blake2bHashState
 
 		//ROUND 8
 		b0 = Sse2.UnpackHigh(m6, m3);
-		b1 = Sse41.Blend(m6.AsUInt16(), m1.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m6.AsSingle(), m1.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G1
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -976,7 +976,7 @@ unsafe partial struct Blake2bHashState
 		row3l = t0;
 		row3h = t1;
 
-		b0 = Sse41.Blend(m1.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b0 = Sse41.Blend(m1.AsSingle(), m2.AsSingle(), 0b_11_00).AsUInt64();
 		b1 = Sse2.Shuffle(m7.AsDouble(), m4.AsDouble(), 0b_01).AsUInt64();
 
 		//G1
@@ -1185,7 +1185,7 @@ unsafe partial struct Blake2bHashState
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
 		b0 = Sse2.UnpackLow(m1, m2);
-		b1 = Sse41.Blend(m3.AsUInt16(), m2.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m3.AsSingle(), m2.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1477,7 +1477,7 @@ unsafe partial struct Blake2bHashState
 		row3h = t1;
 
 		b0 = Sse2.UnpackHigh(m2, m0);
-		b1 = Sse41.Blend(m0.AsUInt16(), m5.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m0.AsSingle(), m5.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G1
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);
@@ -1500,7 +1500,7 @@ unsafe partial struct Blake2bHashState
 		row2h = Ssse3.Shuffle(row2h.AsByte(), r24).AsUInt64();
 
 		b0 = Sse2.Shuffle(m1.AsDouble(), m6.AsDouble(), 0b_01).AsUInt64();
-		b1 = Sse41.Blend(m1.AsUInt16(), m3.AsUInt16(), 0b_1111_0000).AsUInt64();
+		b1 = Sse41.Blend(m1.AsSingle(), m3.AsSingle(), 0b_11_00).AsUInt64();
 
 		//G2
 		row1l = Sse2.Add(Sse2.Add(row1l, b0), row2l);

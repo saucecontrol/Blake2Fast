@@ -44,14 +44,14 @@ unsafe partial struct Blake2sHashState
 		uint v06 = sh[6];
 		uint v07 = sh[7];
 
-		uint v08 = 0x6A09E667u;
-		uint v09 = 0xBB67AE85u;
-		uint v10 = 0x3C6EF372u;
-		uint v11 = 0xA54FF53Au;
-		uint v12 = 0x510E527Fu;
-		uint v13 = 0x9B05688Cu;
-		uint v14 = 0x1F83D9ABu;
-		uint v15 = 0x5BE0CD19u;
+		uint v08 = 0x6a09e667u;
+		uint v09 = 0xbb67ae85u;
+		uint v10 = 0x3c6ef372u;
+		uint v11 = 0xa54ff53au;
+		uint v12 = 0x510e527fu;
+		uint v13 = 0x9b05688cu;
+		uint v14 = 0x1f83d9abu;
+		uint v15 = 0x5be0cd19u;
 
 		v12 ^= sh[8];  // t[0]
 		v13 ^= sh[9];  // t[1]
