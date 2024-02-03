@@ -51,8 +51,8 @@ public class RfcSelfTest
 			var msg = getTestSequence(msglen);
 			var key = getTestSequence(diglen);
 
-			inc.Update(Blake2b.ComputeHash(diglen, msg));
-			inc.Update(Blake2b.ComputeHash(diglen, key, msg));
+			inc.Update(Blake2b.HashData(diglen, msg));
+			inc.Update(Blake2b.HashData(diglen, key, msg));
 		}
 
 		return inc.Finish();
@@ -68,8 +68,8 @@ public class RfcSelfTest
 			var msg = getTestSequence(msglen);
 			var key = getTestSequence(diglen);
 
-			inc.Update(Blake2s.ComputeHash(diglen, msg));
-			inc.Update(Blake2s.ComputeHash(diglen, key, msg));
+			inc.Update(Blake2s.HashData(diglen, msg));
+			inc.Update(Blake2s.HashData(diglen, key, msg));
 		}
 
 		return inc.Finish();
@@ -86,10 +86,10 @@ public class RfcSelfTest
 			var msg = getTestSequence(msglen);
 			var key = getTestSequence(diglen);
 
-			Blake2b.ComputeAndWriteHash(diglen, msg, buff);
+			Blake2b.HashData(diglen, msg, buff);
 			inc.Update(buff[..diglen]);
 
-			Blake2b.ComputeAndWriteHash(diglen, key, msg, buff);
+			Blake2b.HashData(diglen, key, msg, buff);
 			inc.Update(buff[..diglen]);
 		}
 
@@ -107,10 +107,10 @@ public class RfcSelfTest
 			var msg = getTestSequence(msglen);
 			var key = getTestSequence(diglen);
 
-			Blake2s.ComputeAndWriteHash(diglen, msg, buff);
+			Blake2s.HashData(diglen, msg, buff);
 			inc.Update(buff[..diglen]);
 
-			Blake2s.ComputeAndWriteHash(diglen, key, msg, buff);
+			Blake2s.HashData(diglen, key, msg, buff);
 			inc.Update(buff[..diglen]);
 		}
 

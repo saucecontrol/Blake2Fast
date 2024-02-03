@@ -28,54 +28,54 @@ static class Blake2s
 	/// <summary>The default hash digest length in bytes.  For BLAKE2s, this value is 32.</summary>
 	public const int DefaultDigestLength = Blake2sHashState.HashBytes;
 
-	/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
-	public static byte[] ComputeHash(ReadOnlySpan<byte> input) => ComputeHash(DefaultDigestLength, default, input);
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(ReadOnlySpan<byte> source) => HashData(DefaultDigestLength, default, source);
 
-	/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
-	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> input) => ComputeHash(digestLength, default, input);
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(int digestLength, ReadOnlySpan<byte> source) => HashData(digestLength, default, source);
 
-	/// <inheritdoc cref="ComputeHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
-	public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => ComputeHash(DefaultDigestLength, key, input);
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source) => HashData(DefaultDigestLength, key, source);
 
 	/// <summary>Perform a one-shot BLAKE2s hash computation.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 32.</param>
 	/// <param name="key">0 to 32 bytes of input for initializing a keyed hash.</param>
-	/// <param name="input">The message bytes to hash.</param>
-	/// <returns>The computed hash digest from the message bytes in <paramref name="input" />.</returns>
-	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input)
+	/// <param name="source">The message bytes to hash.</param>
+	/// <returns>The computed hash digest from the message bytes in <paramref name="source" />.</returns>
+	public static byte[] HashData(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
 	{
 		var hs = default(Blake2sHashState);
 		hs.Init(digestLength, key);
-		hs.Update(input);
+		hs.Update(source);
 		return hs.Finish();
 	}
 
-	/// <inheritdoc cref="ComputeAndWriteHash(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
-	public static void ComputeAndWriteHash(ReadOnlySpan<byte> input, Span<byte> output) => ComputeAndWriteHash(DefaultDigestLength, default, input, output);
+	/// <inheritdoc cref="HashData(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
+	public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination) => HashData(DefaultDigestLength, default, source, destination);
 
-	/// <inheritdoc cref="ComputeAndWriteHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
-	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> input, Span<byte> output) => ComputeAndWriteHash(digestLength, default, input, output);
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
+	public static void HashData(int digestLength, ReadOnlySpan<byte> source, Span<byte> destination) => HashData(digestLength, default, source, destination);
 
-	/// <inheritdoc cref="ComputeAndWriteHash(int, ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
-	/// <param name="output">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <see cref="DefaultDigestLength" />(32) bytes.</param>
-	public static void ComputeAndWriteHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => ComputeAndWriteHash(DefaultDigestLength, key, input, output);
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte})" />
+	/// <param name="destination">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <see cref="DefaultDigestLength" />(32) bytes.</param>
+	public static void HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination) => HashData(DefaultDigestLength, key, source, destination);
 
-	/// <summary>Perform a one-shot BLAKE2s hash computation and write the hash digest to <paramref name="output" />.</summary>
+	/// <summary>Perform a one-shot BLAKE2s hash computation and write the hash digest to <paramref name="destination" />.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 32.</param>
 	/// <param name="key">0 to 32 bytes of input for initializing a keyed hash.</param>
-	/// <param name="input">The message bytes to hash.</param>
-	/// <param name="output">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <paramref name="digestLength" /> bytes.</param>
-	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output)
+	/// <param name="source">The message bytes to hash.</param>
+	/// <param name="destination">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <paramref name="digestLength" /> bytes.</param>
+	public static void HashData(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (output.Length < digestLength)
-			throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(output));
+		if (destination.Length < digestLength)
+			throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(destination));
 
 		var hs = default(Blake2sHashState);
 		hs.Init(digestLength, key);
-		hs.Update(input);
-		hs.Finish(output);
+		hs.Update(source);
+		hs.Finish(destination);
 	}
 
 	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
@@ -118,5 +118,46 @@ static class Blake2s
 	/// <param name="key">0 to 32 bytes of input for initializing the keyed hash.</param>
 	/// <returns>An <see cref="HMAC" /> instance.</returns>
 	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake2s, digestLength, key);
+#endif
+
+#if BLAKE2_PUBLIC
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(byte[] source) => HashData(DefaultDigestLength, default, new ReadOnlySpan<byte>(source));
+
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(int digestLength, byte[] source) => HashData(digestLength, default, new ReadOnlySpan<byte>(source));
+
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(byte[] key, byte[] source) => HashData(DefaultDigestLength, new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+
+	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+	public static byte[] HashData(int digestLength, byte[] key, byte[] source) => HashData(digestLength, new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+
+	private const string obsoleteMsg = "Use the new HashData method instead.";
+
+#pragma warning disable 1591
+	[Obsolete(obsoleteMsg)]
+	public static byte[] ComputeHash(ReadOnlySpan<byte> input) => HashData(DefaultDigestLength, default, input);
+
+	[Obsolete(obsoleteMsg)]
+	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> input) => HashData(digestLength, default, input);
+
+	[Obsolete(obsoleteMsg)]
+	public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => HashData(DefaultDigestLength, key, input);
+
+	[Obsolete(obsoleteMsg)]
+	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => HashData(digestLength, key, input);
+
+	[Obsolete(obsoleteMsg)]
+	public static void ComputeAndWriteHash(ReadOnlySpan<byte> input, Span<byte> output) => HashData(DefaultDigestLength, default, input, output);
+
+	[Obsolete(obsoleteMsg)]
+	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> input, Span<byte> output) => HashData(digestLength, default, input, output);
+
+	[Obsolete(obsoleteMsg)]
+	public static void ComputeAndWriteHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => HashData(DefaultDigestLength, key, input, output);
+
+	[Obsolete(obsoleteMsg)]
+	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => HashData(digestLength, key, input, output);
 #endif
 }

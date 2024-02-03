@@ -91,7 +91,7 @@ for (int i = 0; i < alg.rounds; i++) {
 	undiagonalize();
 	WriteLine(null);
 
-	if (i == 9 && alg.bits == 64 && isa != "Avx512") {
+	if (i == 9 && alg.rounds > 10 && isa != "Avx512") {
 		WriteLine("// Break CSE so it can't see through to permutations from first 2 rounds.");
 		csebreak();
 		WriteLine(null);

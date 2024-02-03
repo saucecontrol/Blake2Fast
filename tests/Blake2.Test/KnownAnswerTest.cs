@@ -3,7 +3,6 @@
 using System;
 using System.Linq;
 using System.Json;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Xunit;
@@ -40,13 +39,13 @@ public struct KatEntry(JsonObject o)
 
 	public static readonly KatEntry[] Values = getKatValues();
 
-	public static IEnumerable<object[]> Blake2b => Values.Where(k => k.Alg == "blake2b" && k.Key.Length == 0).Select(k => new object[] { k });
+	public static TheoryData<KatEntry> Blake2b => new(Values.Where(k => k.Alg == "blake2b" && k.Key.Length == 0));
 
-	public static IEnumerable<object[]> Blake2bKeyed => Values.Where(k => k.Alg == "blake2b" && k.Key.Length != 0).Select(k => new object[] { k });
+	public static TheoryData<KatEntry> Blake2bKeyed => new(Values.Where(k => k.Alg == "blake2b" && k.Key.Length != 0));
 
-	public static IEnumerable<object[]> Blake2s => Values.Where(k => k.Alg == "blake2s" && k.Key.Length == 0).Select(k => new object[] { k });
+	public static TheoryData<KatEntry> Blake2s => new(Values.Where(k => k.Alg == "blake2s" && k.Key.Length == 0));
 
-	public static IEnumerable<object[]> Blake2sKeyed => Values.Where(k => k.Alg == "blake2s" && k.Key.Length != 0).Select(k => new object[] { k });
+	public static TheoryData<KatEntry> Blake2sKeyed => new(Values.Where(k => k.Alg == "blake2s" && k.Key.Length != 0));
 }
 
 public class KnownAnswerTest

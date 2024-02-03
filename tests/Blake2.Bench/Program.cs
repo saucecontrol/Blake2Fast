@@ -137,7 +137,7 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2bFast(byte[] data)
 	{
-		return Blake2Fast.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+		return Blake2Fast.Blake2b.HashData(BenchConfig.HashBytes, BenchConfig.Key, data);
 	}
 
 	[Benchmark(Description = "Blake2Sharp"), BenchmarkCategory("Blake2b")]
@@ -229,7 +229,7 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2sFast(byte[] data)
 	{
-		return Blake2Fast.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+		return Blake2Fast.Blake2s.HashData(BenchConfig.HashBytes, BenchConfig.Key, data);
 	}
 
 	[Benchmark(Description = "Blake2s-net"), BenchmarkCategory("Blake2s")]
@@ -260,14 +260,14 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2s256(byte[] data)
 	{
-		return Blake2Fast.Blake2s.ComputeHash(data);
+		return Blake2Fast.Blake2s.HashData(data);
 	}
 
 	[Benchmark(Description = "BLAKE2-512"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2b256(byte[] data)
 	{
-		return Blake2Fast.Blake2b.ComputeHash(data);
+		return Blake2Fast.Blake2b.HashData(data);
 	}
 
 	[Benchmark(Description = "MD5"), BenchmarkCategory("OtherHash")]
