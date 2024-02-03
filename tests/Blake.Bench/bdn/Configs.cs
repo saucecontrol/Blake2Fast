@@ -28,7 +28,7 @@ public class CustomConfig : ManualConfig
 		AddColumn(new DataLengthColumn());
 		Options |= ConfigOptions.DisableOptimizationsValidator;
 		Orderer = ByPlatformByDataLengthOrderer.Instance;
-		ArtifactsPath = Path.Combine(outDir.FullName, "bdn", "Blake2.Bench");
+		ArtifactsPath = Path.Combine(outDir.FullName, "bdn", "Blake.Bench");
 	}
 }
 

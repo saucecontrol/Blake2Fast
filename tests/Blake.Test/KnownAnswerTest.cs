@@ -33,7 +33,7 @@ public struct KatEntry(JsonObject o)
 
 	private static KatEntry[] getKatValues()
 	{
-		using var stm = typeof(KatEntry).Assembly.GetManifestResourceStream("Blake2.Test.blake2-kat.json");
+		using var stm = typeof(KatEntry).Assembly.GetManifestResourceStream("Blake.Test.blake2-kat.json");
 		return ((JsonArray)JsonValue.Load(stm)).Cast<JsonObject>().Select(o => new KatEntry(o)).ToArray();
 	}
 

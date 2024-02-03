@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blake2.Bench", "..\tests\Blake2.Bench\Blake2.Bench.csproj", "{C19EDB86-A15B-4E95-9B7F-DC9D725F70F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blake.Bench", "..\tests\Blake.Bench\Blake.Bench.csproj", "{C19EDB86-A15B-4E95-9B7F-DC9D725F70F1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blake2.Test", "..\tests\Blake2.Test\Blake2.Test.csproj", "{791618B6-C4AC-4859-8259-589416D0864A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blake.Test", "..\tests\Blake.Test\Blake.Test.csproj", "{791618B6-C4AC-4859-8259-589416D0864A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blake2Fast", "Blake2Fast\Blake2Fast.csproj", "{D9ABAAEA-7766-497A-88F5-92FF501B51EC}"
 EndProject

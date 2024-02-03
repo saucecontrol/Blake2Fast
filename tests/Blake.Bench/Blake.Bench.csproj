@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PlatformTarget>AnyCPU</PlatformTarget>
-		<TargetFrameworks>net6.0;net8.0;net472</TargetFrameworks>
+		<TargetFrameworks>net6.0;net8.0;net472;</TargetFrameworks>
 		<NoWarn>$(NoWarn);NU1701</NoWarn> <!-- blake2s-net has netfx target only -->
 	</PropertyGroup>
 

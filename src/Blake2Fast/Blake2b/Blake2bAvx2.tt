@@ -1,5 +1,5 @@
 <#@ template language="C#" hostspecific="true" #>
-<#@ output extension=".cs" encoding="utf-8" #>
+<#@ output extension=".g.cs" encoding="utf-8" #>
 <# var alg = b2b; string isa = Host.TemplateFile.Contains("Avx512") ? "Avx512" : "Avx2"; #>
 <#@ include file="..\_Blake2Simd.ttinclude" #><#@ include file="..\_Blake2Alg.ttinclude" #>
 <#+

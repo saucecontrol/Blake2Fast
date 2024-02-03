@@ -127,7 +127,7 @@ byte[] WriteDataAndCalculateHash(byte[] data, string outFile)
 Benchmarks
 ----------
 
-Sample results from the [Blake2.Bench](tests/Blake2.Bench) project.  Benchmarks were run on the .NET Core 3.1 x64 runtime.  Configuration below:
+Sample results from the [Blake.Bench](tests/Blake.Bench) project.  Benchmarks were run on the .NET Core 3.1 x64 runtime.  Configuration below:
 
 ``` ini
 BenchmarkDotNet=v0.12.1, OS=Windows 10.0.18363.836 (1909/November2018Update/19H2)

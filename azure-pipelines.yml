@@ -35,13 +35,13 @@ steps:
 - script: dotnet build src/Blake2Fast -c Dist --version-suffix ci$(Build.BuildNumber)
   displayName: Build
 
-- script: dotnet test tests/Blake2.Test -c Coverage
+- script: dotnet test tests/Blake.Test -c Coverage
   displayName: Test
 
-- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -e DOTNET_EnableAVX=0 -p:CoverageFileSuffix=_noavx --no-build
+- script: dotnet test tests/Blake.Test -c Coverage -f net6.0 -e DOTNET_EnableAVX=0 -p:CoverageFileSuffix=_noavx --no-build
   displayName: Test - No AVX
 
-- script: dotnet test tests/Blake2.Test -c Coverage -f net6.0 -e DOTNET_EnableHWIntrinsic=0 -p:CoverageFileSuffix=_nosimd --no-build
+- script: dotnet test tests/Blake.Test -c Coverage -f net6.0 -e DOTNET_EnableHWIntrinsic=0 -p:CoverageFileSuffix=_nosimd --no-build
   displayName: Test - No SIMD
 
 - task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@5
