@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DefineConstants>$(DefineConstants);BLAKE2_PUBLIC;BLAKE2_CRYPTOGRAPHY</DefineConstants>
+		<DefineConstants>$(DefineConstants);BLAKE_PUBLIC;BLAKE_CRYPTOGRAPHY</DefineConstants>
 		<DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">$(DefineConstants);BUILTIN_SPAN</DefineConstants>
 		<DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp3.0'))">$(DefineConstants);HWINTRINSICS</DefineConstants>
 	</PropertyGroup>

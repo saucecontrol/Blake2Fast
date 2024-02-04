@@ -6,7 +6,7 @@ namespace Blake2Fast;
 
 /// <summary>Defines an incremental BLAKE2 hashing operation.</summary>
 /// <remarks>Allows the hash to be computed as portions of the message become available, rather than all at once.</remarks>
-#if BLAKE2_PUBLIC
+#if BLAKE_PUBLIC
 public
 #else
 internal

@@ -1,6 +1,6 @@
 // Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
 
-#if BLAKE2_PUBLIC
+#if BLAKE_PUBLIC
 using System.Runtime.CompilerServices;
 
 namespace Blake2Fast.Implementation;

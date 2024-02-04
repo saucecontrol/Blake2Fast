@@ -1,6 +1,6 @@
 // Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
 
-#if BLAKE2_CRYPTOGRAPHY
+#if BLAKE_CRYPTOGRAPHY
 using System;
 using System.Security.Cryptography;
 

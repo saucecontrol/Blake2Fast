@@ -10,21 +10,20 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-
 #if HWINTRINSICS
 using System.Runtime.Intrinsics.X86;
 #endif
 
 namespace Blake2Fast.Implementation;
 
-/// <summary>Defines the state associated with an incremental BLAKE2<#= alg.suffix #> hashing operation.</summary>
-/// <remarks>Instances of this struct must be created by <see cref="Blake2<#= alg.suffix #>.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
-#if BLAKE2_PUBLIC
+/// <summary>Defines the state associated with an incremental BLAKE<#= alg.suffix #> hashing operation.</summary>
+/// <remarks>Instances of this struct must be created by <see cref="Blake<#= alg.suffix #>.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
+#if BLAKE_PUBLIC
 public
 #else
 internal
 #endif
-unsafe partial struct Blake2<#= alg.suffix #>HashState : IBlake2Incremental
+unsafe partial struct Blake<#= alg.suffix #>HashState : IBlake2Incremental
 {
 	internal const int WordSize = sizeof(<#= alg.wtype #>);
 	internal const int BlockWords = 16;
@@ -93,7 +92,7 @@ if (alg.bits == 64) {
 		uint inc = Math.Min(cb, BlockBytes);
 
 		fixed (byte* pinput = &input)
-		fixed (Blake2<#= alg.suffix #>HashState* s = &this)
+		fixed (Blake<#= alg.suffix #>HashState* s = &this)
 		{
 			<#= alg.wtype #>* sh = s->h;
 			byte* pin = pinput + offs;

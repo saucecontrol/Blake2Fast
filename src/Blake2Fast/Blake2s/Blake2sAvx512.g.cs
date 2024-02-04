@@ -15,11 +15,6 @@ using System.Runtime.CompilerServices;
 
 namespace Blake2Fast.Implementation;
 
-#if BLAKE2_PUBLIC
-public
-#else
-internal
-#endif
 unsafe partial struct Blake2sHashState
 {
 	// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf

@@ -9,7 +9,7 @@
 
 using System;
 
-#if BLAKE2_CRYPTOGRAPHY
+#if BLAKE_CRYPTOGRAPHY
 using System.Security.Cryptography;
 #endif
 
@@ -17,16 +17,16 @@ using Blake2Fast.Implementation;
 
 namespace Blake2Fast;
 
-/// <summary>Static helper methods for BLAKE2<#= alg.suffix #> hashing.</summary>
-#if BLAKE2_PUBLIC
+/// <summary>Static helper methods for BLAKE<#= alg.suffix #> hashing.</summary>
+#if BLAKE_PUBLIC
 public
 #else
 internal
 #endif
-static class Blake2<#= alg.suffix #>
+static class Blake<#= alg.suffix #>
 {
-	/// <summary>The default hash digest length in bytes.  For BLAKE2<#= alg.suffix #>, this value is <#= alg.bits #>.</summary>
-	public const int DefaultDigestLength = Blake2<#= alg.suffix #>HashState.HashBytes;
+	/// <summary>The default hash digest length in bytes.  For BLAKE<#= alg.suffix #>, this value is <#= alg.bits #>.</summary>
+	public const int DefaultDigestLength = Blake<#= alg.suffix #>HashState.HashBytes;
 
 	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 	public static byte[] HashData(ReadOnlySpan<byte> source) => HashData(DefaultDigestLength, default, source);
@@ -37,7 +37,7 @@ static class Blake2<#= alg.suffix #>
 	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 	public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source) => HashData(DefaultDigestLength, key, source);
 
-	/// <summary>Perform a one-shot BLAKE2<#= alg.suffix #> hash computation.</summary>
+	/// <summary>Perform a one-shot BLAKE<#= alg.suffix #> hash computation.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 	/// <param name="key">0 to <#= alg.bits #> bytes of input for initializing a keyed hash.</param>
@@ -45,7 +45,7 @@ static class Blake2<#= alg.suffix #>
 	/// <returns>The computed hash digest from the message bytes in <paramref name="source" />.</returns>
 	public static byte[] HashData(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
 	{
-		var hs = default(Blake2<#= alg.suffix #>HashState);
+		var hs = default(Blake<#= alg.suffix #>HashState);
 		hs.Init(digestLength, key);
 		hs.Update(source);
 		return hs.Finish();
@@ -61,7 +61,7 @@ static class Blake2<#= alg.suffix #>
 	/// <param name="destination">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <see cref="DefaultDigestLength" />(<#= alg.bits #>) bytes.</param>
 	public static void HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination) => HashData(DefaultDigestLength, key, source, destination);
 
-	/// <summary>Perform a one-shot BLAKE2<#= alg.suffix #> hash computation and write the hash digest to <paramref name="destination" />.</summary>
+	/// <summary>Perform a one-shot BLAKE<#= alg.suffix #> hash computation and write the hash digest to <paramref name="destination" />.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 	/// <param name="key">0 to <#= alg.bits #> bytes of input for initializing a keyed hash.</param>
@@ -72,55 +72,55 @@ static class Blake2<#= alg.suffix #>
 		if (destination.Length < digestLength)
 			throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(destination));
 
-		var hs = default(Blake2<#= alg.suffix #>HashState);
+		var hs = default(Blake<#= alg.suffix #>HashState);
 		hs.Init(digestLength, key);
 		hs.Update(source);
 		hs.Finish(destination);
 	}
 
 	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
+	public static Blake<#= alg.suffix #>HashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
 
 	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
+	public static Blake<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
 
 	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
+	public static Blake<#= alg.suffix #>HashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
 
-	/// <summary>Create and initialize an incremental BLAKE2<#= alg.suffix #> hash computation.</summary>
+	/// <summary>Create and initialize an incremental BLAKE<#= alg.suffix #> hash computation.</summary>
 	/// <remarks>If you will receive the input in segments rather than all at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 	/// <param name="key">0 to <#= alg.bits #> bytes of input for initializing a keyed hash.</param>
-	/// <returns>An <see cref="Blake2<#= alg.suffix #>HashState" /> instance for updating and finalizing the hash.</returns>
-	public static Blake2<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
+	/// <returns>An <see cref="Blake<#= alg.suffix #>HashState" /> instance for updating and finalizing the hash.</returns>
+	public static Blake<#= alg.suffix #>HashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
 	{
-		var hs = default(Blake2<#= alg.suffix #>HashState);
+		var hs = default(Blake<#= alg.suffix #>HashState);
 		hs.Init(digestLength, key);
 		return hs;
 	}
 
-#if BLAKE2_CRYPTOGRAPHY
+#if BLAKE_CRYPTOGRAPHY
 	/// <inheritdoc cref="CreateHashAlgorithm(int)" />
 	public static HashAlgorithm CreateHashAlgorithm() => CreateHashAlgorithm(DefaultDigestLength);
 
-	/// <summary>Creates and initializes a <see cref="HashAlgorithm" /> instance that implements BLAKE2<#= alg.suffix #> hashing.</summary>
+	/// <summary>Creates and initializes a <see cref="HashAlgorithm" /> instance that implements BLAKE<#= alg.suffix #> hashing.</summary>
 	/// <remarks>Use this only if you require an implementation of <see cref="HashAlgorithm" />.  It is less efficient than the direct methods.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 	/// <returns>A <see cref="HashAlgorithm" /> instance.</returns>
-	public static HashAlgorithm CreateHashAlgorithm(int digestLength) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake2<#= alg.suffix #>, digestLength, default);
+	public static HashAlgorithm CreateHashAlgorithm(int digestLength) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake<#= alg.suffix #>, digestLength, default);
 
 	/// <inheritdoc cref="CreateHMAC(int, ReadOnlySpan{byte})" />
 	public static HMAC CreateHMAC(ReadOnlySpan<byte> key) => CreateHMAC(DefaultDigestLength, key);
 
-	/// <summary>Creates and initializes an <see cref="HMAC" /> instance that implements BLAKE2<#= alg.suffix #> keyed hashing.  Uses BLAKE2's built-in support for keyed hashing rather than the normal 2-pass approach.</summary>
+	/// <summary>Creates and initializes an <see cref="HMAC" /> instance that implements BLAKE<#= alg.suffix #> keyed hashing.  Uses BLAKE2's built-in support for keyed hashing rather than the normal 2-pass approach.</summary>
 	/// <remarks>Use this only if you require an implementation of <see cref="HMAC" />.  It is less efficient than the direct methods.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to <#= alg.bits #>.</param>
 	/// <param name="key">0 to <#= alg.bits #> bytes of input for initializing the keyed hash.</param>
 	/// <returns>An <see cref="HMAC" /> instance.</returns>
-	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake2<#= alg.suffix #>, digestLength, key);
+	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake<#= alg.suffix #>, digestLength, key);
 #endif
 
-#if BLAKE2_PUBLIC
+#if BLAKE_PUBLIC
 	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 	public static byte[] HashData(byte[] source) => HashData(DefaultDigestLength, default, new ReadOnlySpan<byte>(source));
 

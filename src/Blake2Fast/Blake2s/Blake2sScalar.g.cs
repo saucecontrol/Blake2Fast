@@ -9,11 +9,6 @@
 
 namespace Blake2Fast.Implementation;
 
-#if BLAKE2_PUBLIC
-public
-#else
-internal
-#endif
 unsafe partial struct Blake2sHashState
 {
 	private static void mixScalar(uint* sh, uint* m)

@@ -10,7 +10,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-
 #if HWINTRINSICS
 using System.Runtime.Intrinsics.X86;
 #endif
@@ -19,7 +18,7 @@ namespace Blake2Fast.Implementation;
 
 /// <summary>Defines the state associated with an incremental BLAKE2b hashing operation.</summary>
 /// <remarks>Instances of this struct must be created by <see cref="Blake2b.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
-#if BLAKE2_PUBLIC
+#if BLAKE_PUBLIC
 public
 #else
 internal

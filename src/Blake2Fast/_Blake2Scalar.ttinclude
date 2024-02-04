@@ -9,12 +9,7 @@
 
 namespace Blake2Fast.Implementation;
 
-#if BLAKE2_PUBLIC
-public
-#else
-internal
-#endif
-unsafe partial struct Blake2<#= alg.suffix #>HashState
+unsafe partial struct Blake<#= alg.suffix #>HashState
 {
 	private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
 	{
@@ -37,25 +32,25 @@ mixvars (alg, new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
 for (int i = 0; i < alg.rounds; i++) {
 	int s = i % 10;
 	WriteLine($"\t\t//ROUND {i+1}");
-	mix(alg, 0, 4,  8, 12, sigma[s][ 0], 1);
-	mix(alg, 1, 5,  9, 13, sigma[s][ 2], 1);
-	mix(alg, 2, 6, 10, 14, sigma[s][ 4], 1);
-	mix(alg, 3, 7, 11, 15, sigma[s][ 6], 1);
+	mix(alg, 0, 4,  8, 12, alg.sigma[s][ 0], 1);
+	mix(alg, 1, 5,  9, 13, alg.sigma[s][ 2], 1);
+	mix(alg, 2, 6, 10, 14, alg.sigma[s][ 4], 1);
+	mix(alg, 3, 7, 11, 15, alg.sigma[s][ 6], 1);
 
-	mix(alg, 2, 6, 10, 14, sigma[s][ 5], 2);
-	mix(alg, 3, 7, 11, 15, sigma[s][ 7], 2);
-	mix(alg, 0, 4,  8, 12, sigma[s][ 1], 2);
-	mix(alg, 1, 5,  9, 13, sigma[s][ 3], 2);
+	mix(alg, 2, 6, 10, 14, alg.sigma[s][ 5], 2);
+	mix(alg, 3, 7, 11, 15, alg.sigma[s][ 7], 2);
+	mix(alg, 0, 4,  8, 12, alg.sigma[s][ 1], 2);
+	mix(alg, 1, 5,  9, 13, alg.sigma[s][ 3], 2);
 
-	mix(alg, 0, 5, 10, 15, sigma[s][ 8], 1);
-	mix(alg, 1, 6, 11, 12, sigma[s][10], 1);
-	mix(alg, 2, 7,  8, 13, sigma[s][12], 1);
-	mix(alg, 3, 4,  9, 14, sigma[s][14], 1);
+	mix(alg, 0, 5, 10, 15, alg.sigma[s][ 8], 1);
+	mix(alg, 1, 6, 11, 12, alg.sigma[s][10], 1);
+	mix(alg, 2, 7,  8, 13, alg.sigma[s][12], 1);
+	mix(alg, 3, 4,  9, 14, alg.sigma[s][14], 1);
 
-	mix(alg, 2, 7,  8, 13, sigma[s][13], 2);
-	mix(alg, 3, 4,  9, 14, sigma[s][15], 2);
-	mix(alg, 0, 5, 10, 15, sigma[s][ 9], 2);
-	mix(alg, 1, 6, 11, 12, sigma[s][11], 2);
+	mix(alg, 2, 7,  8, 13, alg.sigma[s][13], 2);
+	mix(alg, 3, 4,  9, 14, alg.sigma[s][15], 2);
+	mix(alg, 0, 5, 10, 15, alg.sigma[s][ 9], 2);
+	mix(alg, 1, 6, 11, 12, alg.sigma[s][11], 2);
 }
 
 for (int i = 0; i < 8; i++) {
@@ -68,9 +63,9 @@ for (int i = 0; i < 8; i++) {
 }
 <#+
 
-string ror(b2alg alg, string x, int y) => $"({x} >> {y,2}) ^ ({x} << {(alg.bits - y),2})";
+string ror(balg alg, string x, int y) => $"({x} >> {y,2}) ^ ({x} << {(alg.bits - y),2})";
 
-void mixvars(b2alg alg, int[] pos)
+void mixvars(balg alg, int[] pos)
 {
 	foreach (int j in pos) {
 #>
@@ -80,7 +75,7 @@ void mixvars(b2alg alg, int[] pos)
 	WriteLine(null);
 }
 
-void mix(b2alg alg, int a, int b, int c, int d, int s, int p)
+void mix(balg alg, int a, int b, int c, int d, int s, int p)
 {
 	string sa = a.ToString("d2");
 	string sb = b.ToString("d2");
