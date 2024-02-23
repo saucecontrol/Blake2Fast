@@ -10,7 +10,7 @@ using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Toolchains.CsProj;
 using BenchmarkDotNet.Toolchains.DotNetCli;
 
-namespace Blake2Bench;
+namespace BlakeBench;
 
 public class CustomConfig : ManualConfig
 {
@@ -48,6 +48,15 @@ public class MultipleJitConfig : CustomConfig
 
 		AddJob(Job.ShortRun.WithRuntime(ClrRuntime.Net472).WithJit(Jit.RyuJit).WithPlatform(Platform.X64).WithId("net472").AsBaseline());
 		AddJob(Job.ShortRun.WithRuntime(ClrRuntime.Net472).WithJit(Jit.LegacyJit).WithPlatform(Platform.X86).WithId("net472").AsBaseline());
+	}
+}
+
+public class MultipleVersionConfig : CustomConfig
+{
+	public MultipleVersionConfig()
+	{
+		AddJob(Job.MediumRun.WithCustomBuildConfiguration("NUGETBENCH").WithLaunchCount(1).WithBaseline(true));
+		AddJob(Job.MediumRun.WithLaunchCount(1));
 	}
 }
 

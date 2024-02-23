@@ -60,7 +60,7 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 	/// <inheritdoc />
 	public readonly int DigestLength => (int)outlen;
 
-	private void compress(ref byte input, uint offs, uint cb)
+	private void compress(ref byte input, uint cb)
 	{
 		uint inc = Math.Min(cb, BlockBytes);
 
@@ -68,14 +68,16 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 		fixed (Blake2bHashState* s = &this)
 		{
 			ulong* sh = s->h;
-			byte* pin = pinput + offs;
+			ulong* st = s->t;
+			byte* pin = pinput;
 			byte* end = pin + cb;
 
 			do
 			{
-				t[0] += inc;
-				if (t[0] < inc)
-					t[1]++;
+				ulong t = *st + inc;
+				ulong c = t < inc ? 1u : 0u;
+				st[0] = t;
+				st[1] += c;
 
 				ulong* m = (ulong*)pin;
 #if HWINTRINSICS
@@ -123,33 +125,34 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 		if (outlen == 0) ThrowHelper.HashNotInitialized();
 		if (f[0] != 0) ThrowHelper.HashFinalized();
 
-		uint consumed = 0;
 		uint remaining = (uint)input.Length;
 		ref byte rinput = ref MemoryMarshal.GetReference(input);
 
-		uint blockrem = BlockBytes - c;
-		if ((c != 0) && (remaining > blockrem))
+		uint blockrem;
+		if ((c != 0) && (remaining > (blockrem = BlockBytes - c)))
 		{
 			if (blockrem != 0)
+			{
 				Unsafe.CopyBlockUnaligned(ref b[c], ref rinput, blockrem);
+				rinput = ref Unsafe.Add(ref rinput, (nint)blockrem);
+				remaining -= blockrem;
+			}
 
+			compress(ref b[0], BlockBytes);
 			c = 0;
-			compress(ref b[0], 0, BlockBytes);
-			consumed += blockrem;
-			remaining -= blockrem;
 		}
 
 		if (remaining > BlockBytes)
 		{
 			uint cb = (remaining - 1) & ~((uint)BlockBytes - 1);
-			compress(ref rinput, consumed, cb);
-			consumed += cb;
+			compress(ref rinput, cb);
+			rinput = ref Unsafe.Add(ref rinput, (nint)cb);
 			remaining -= cb;
 		}
 
 		if (remaining != 0)
 		{
-			Unsafe.CopyBlockUnaligned(ref b[c], ref Unsafe.Add(ref rinput, (int)consumed), remaining);
+			Unsafe.CopyBlockUnaligned(ref b[c], ref rinput, remaining);
 			c += remaining;
 		}
 	}
@@ -176,7 +179,7 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 	{
 		ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
 
-		if (sizeof(T) > BlockBytes - c)
+		if (c > BlockBytes - (uint)sizeof(T))
 		{
 			Update(new ReadOnlySpan<byte>(&input, sizeof(T)));
 			return;
@@ -197,9 +200,13 @@ unsafe partial struct Blake2bHashState : IBlake2Incremental
 			Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 		f[0] = ~0ul;
-		compress(ref b[0], 0, c);
+		compress(ref b[0], c);
 
-		Unsafe.CopyBlockUnaligned(ref hash[0], ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
+		ref byte hout = ref MemoryMarshal.GetReference(hash);
+		if (hash.Length is HashBytes)
+			Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<ulong, byte>(ref h[0]), HashBytes);
+		else
+			Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<ulong, byte>(ref h[0]), outlen);
 	}
 
 	/// <inheritdoc />

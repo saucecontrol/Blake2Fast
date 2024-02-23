@@ -3,12 +3,12 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PlatformTarget>AnyCPU</PlatformTarget>
-		<TargetFrameworks>net6.0;net8.0;net472;</TargetFrameworks>
+		<TargetFrameworks>net8.0;net6.0;net472;</TargetFrameworks>
 		<NoWarn>$(NoWarn);NU1701</NoWarn> <!-- blake2s-net has netfx target only -->
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BenchmarkDotNet" Version="0.13.9" />
+		<PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
 		<PackageReference Include="ByteTerrace.Maths.Cryptography.Blake2" Version="0.0.6" />
 		<PackageReference Include="Isopoh.Cryptography.Blake2b" Version="2.0.0" />
 		<PackageReference Include="Konscious.Security.Cryptography.Blake2" Version="1.1.0" />
@@ -22,7 +22,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Blake2Fast\Blake2Fast.csproj" />
+		<PackageReference Condition="$(DefineConstants.Contains('NUGETBENCH'))" Include="SauceControl.Blake2Fast" Version="2.0.0" />
+		<ProjectReference Condition="!$(DefineConstants.Contains('NUGETBENCH'))" Include="..\..\src\Blake2Fast\Blake2Fast.csproj" />
 	</ItemGroup>
 
 </Project>

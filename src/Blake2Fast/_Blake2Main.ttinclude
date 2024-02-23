@@ -31,23 +31,7 @@ unsafe partial struct Blake<#= alg.suffix #>HashState : IBlake2Incremental
 	internal const int HashWords = 8;
 	internal const int HashBytes = HashWords * WordSize;
 	internal const int MaxKeyBytes = HashBytes;
-<#
-	//internal const int SaltBytes = 2 * WordSize;
-	//internal const int PersonalizationBytes = 2 * WordSize;
-#>
 
-<#
-	// BE platforms can't use the Span<byte> version of the IV. This builds it in the native type.
-	/*
-	private static readonly [#= alg.wtype #][] iv = new[] {
-		[#= string.Format(alg.ivfmt, alg.iv[0]) #], [#= string.Format(alg.ivfmt, alg.iv[1]) #],
-		[#= string.Format(alg.ivfmt, alg.iv[2]) #], [#= string.Format(alg.ivfmt, alg.iv[3]) #],
-		[#= string.Format(alg.ivfmt, alg.iv[4]) #], [#= string.Format(alg.ivfmt, alg.iv[5]) #],
-		[#= string.Format(alg.ivfmt, alg.iv[6]) #], [#= string.Format(alg.ivfmt, alg.iv[7]) #]
-	};
-	*/
-
-#>
 	private fixed byte b[BlockBytes];
 	private fixed <#= alg.wtype #> h[HashWords];
 	private fixed <#= alg.wtype #> t[2];
@@ -87,7 +71,7 @@ if (alg.bits == 64) {
 	/// <inheritdoc />
 	public readonly int DigestLength => (int)outlen;
 
-	private void compress(ref byte input, uint offs, uint cb)
+	private void compress(ref byte input, uint cb)
 	{
 		uint inc = Math.Min(cb, BlockBytes);
 
@@ -95,14 +79,26 @@ if (alg.bits == 64) {
 		fixed (Blake<#= alg.suffix #>HashState* s = &this)
 		{
 			<#= alg.wtype #>* sh = s->h;
-			byte* pin = pinput + offs;
+			<#= alg.wtype #>* st = s->t;
+			byte* pin = pinput;
 			byte* end = pin + cb;
 
 			do
 			{
-				t[0] += inc;
-				if (t[0] < inc)
-					t[1]++;
+<#
+if (alg.bits == 32) {
+#>
+				*(ulong*)st += inc;
+<#
+} else {
+#>
+				<#= alg.wtype #> t = *st + inc;
+				<#= alg.wtype #> c = t < inc ? 1u : 0u;
+				st[0] = t;
+				st[1] += c;
+<#
+}
+#>
 
 				<#= alg.wtype #>* m = (<#= alg.wtype #>*)pin;
 <#
@@ -160,38 +156,9 @@ if (alg.bits == 64) {
 
 		outlen = (uint)digestLength;
 
-<#
-		// Use the Span<byte> IV for perf improvements on LE platforms, or the array for BE
-		/*
-		if (BitConverter.IsLittleEndian)
-			Unsafe.CopyBlock(ref Unsafe.As<[#= alg.wtype #], byte>(ref h[0]), ref MemoryMarshal.GetReference(ivle), HashBytes);
-		else
-			Unsafe.CopyBlock(ref Unsafe.As<[#= alg.wtype #], byte>(ref h[0]), ref Unsafe.As<[#= alg.wtype #], byte>(ref iv[0]), HashBytes);
-		*/
-
-#>
 		Unsafe.CopyBlock(ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), ref MemoryMarshal.GetReference(ivle), HashBytes);
 		h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
-<#
-		// Salt and Personalization support can be added like this, assuming ReadOnlySpan<byte> args.
-		// I just didn't want to deal with all the extra overloads and parameter validation.
-		/*
-		if ((salt.Length != 0)
-		{
-			ref [#= alg.wtype #] rs = ref Unsafe.As<byte, [#= alg.wtype #]>(ref salt[0]);
-			h[4] ^= rs;
-			h[5] ^= Unsafe.Add(ref rs, 1);
-		}
-		if ((personalization.Length != 0)
-		{
-			ref [#= alg.wtype #] rp = ref Unsafe.As<byte, [#= alg.wtype #]>(ref personalization[0]);
-			h[6] ^= rp;
-			h[7] ^= Unsafe.Add(ref rp, 1);
-		}
-		*/
-
-#>
 		if (keylen != 0)
 		{
 			Unsafe.CopyBlockUnaligned(ref b[0], ref MemoryMarshal.GetReference(key), keylen);
@@ -204,33 +171,34 @@ if (alg.bits == 64) {
 		if (outlen == 0) ThrowHelper.HashNotInitialized();
 		if (f[0] != 0) ThrowHelper.HashFinalized();
 
-		uint consumed = 0;
 		uint remaining = (uint)input.Length;
 		ref byte rinput = ref MemoryMarshal.GetReference(input);
 
-		uint blockrem = BlockBytes - c;
-		if ((c != 0) && (remaining > blockrem))
+		uint blockrem;
+		if ((c != 0) && (remaining > (blockrem = BlockBytes - c)))
 		{
 			if (blockrem != 0)
+			{
 				Unsafe.CopyBlockUnaligned(ref b[c], ref rinput, blockrem);
+				rinput = ref Unsafe.Add(ref rinput, (nint)blockrem);
+				remaining -= blockrem;
+			}
 
+			compress(ref b[0], BlockBytes);
 			c = 0;
-			compress(ref b[0], 0, BlockBytes);
-			consumed += blockrem;
-			remaining -= blockrem;
 		}
 
 		if (remaining > BlockBytes)
 		{
 			uint cb = (remaining - 1) & ~((uint)BlockBytes - 1);
-			compress(ref rinput, consumed, cb);
-			consumed += cb;
+			compress(ref rinput, cb);
+			rinput = ref Unsafe.Add(ref rinput, (nint)cb);
 			remaining -= cb;
 		}
 
 		if (remaining != 0)
 		{
-			Unsafe.CopyBlockUnaligned(ref b[c], ref Unsafe.Add(ref rinput, (int)consumed), remaining);
+			Unsafe.CopyBlockUnaligned(ref b[c], ref rinput, remaining);
 			c += remaining;
 		}
 	}
@@ -257,7 +225,7 @@ if (alg.bits == 64) {
 	{
 		ThrowHelper.ThrowIfIsRefOrContainsRefs<T>();
 
-		if (sizeof(T) > BlockBytes - c)
+		if (c > BlockBytes - (uint)sizeof(T))
 		{
 			Update(new ReadOnlySpan<byte>(&input, sizeof(T)));
 			return;
@@ -278,21 +246,13 @@ if (alg.bits == 64) {
 			Unsafe.InitBlockUnaligned(ref b[c], 0, BlockBytes - c);
 
 		f[0] = ~0<#= alg.wsuff #>;
-		compress(ref b[0], 0, c);
+		compress(ref b[0], c);
 
-<#
-		// For BE platforms, the hash words need to be byte swapped.
-		/*
-		if (!BitConverter.IsLittleEndian)
-		{
-			var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<[#= alg.wtype #], byte>(ref h[0]), HashBytes);
-			for (int i = 0; i < HashWords; i++)
-				h[i] = BinaryPrimitives.ReadUInt[#= alg.bits #]LittleEndian(span.Slice(i * WordSize, WordSize));
-		}
-		*/
-
-#>
-		Unsafe.CopyBlockUnaligned(ref hash[0], ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), outlen);
+		ref byte hout = ref MemoryMarshal.GetReference(hash);
+		if (hash.Length is HashBytes)
+			Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), HashBytes);
+		else
+			Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<<#= alg.wtype #>, byte>(ref h[0]), outlen);
 	}
 
 	/// <inheritdoc />

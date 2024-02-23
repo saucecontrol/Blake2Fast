@@ -9,7 +9,7 @@ using BenchmarkDotNet.Filters;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Attributes;
 
-namespace Blake2Bench;
+namespace BlakeBench;
 
 static class Paths
 {
@@ -61,7 +61,8 @@ class Program
 			1. Blake2Fast vs .NET in-box algorithms (MD5 and SHA2)
 			2. Blake2Fast BLAKE2b vs 3rd party libraries
 			3. Blake2Fast BLAKE2s vs 3rd party libraries
-			4. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
+			5. Blake2Fast 2.0 vs Current
+			6. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
 			"""
 		);
 		switch (Console.ReadKey().Key)
@@ -70,16 +71,19 @@ class Program
 				singleRun();
 				break;
 			case ConsoleKey.D1:
-				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "OtherHash" ])));
+				BenchmarkRunner.Run<BlakeBench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "OtherHash" ])));
 				break;
 			case ConsoleKey.D2:
-				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2b" ])));
+				BenchmarkRunner.Run<BlakeBench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2b" ])));
 				break;
 			case ConsoleKey.D3:
-				BenchmarkRunner.Run<Blake2Bench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
+				BenchmarkRunner.Run<BlakeBench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
 				break;
-			case ConsoleKey.D4:
-				BenchmarkRunner.Run<Blake2Bench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter([ "JitTest" ])));
+			case ConsoleKey.D5:
+				BenchmarkRunner.Run<BlakeBench>(new MultipleVersionConfig().AddFilter(new AllCategoriesFilter(["JitTest"])));
+				break;
+			case ConsoleKey.D6:
+				BenchmarkRunner.Run<BlakeBench>(new MultipleJitConfig().AddFilter(new AllCategoriesFilter([ "JitTest" ])));
 				break;
 			default:
 				Console.WriteLine("Unrecognized command.");
@@ -89,7 +93,7 @@ class Program
 
 	private static void singleRun()
 	{
-		var bench = new Blake2Bench();
+		var bench = new BlakeBench();
 
 		// BLAKE2B
 		Console.WriteLine();
@@ -117,7 +121,7 @@ class Program
 	}
 }
 
-public class Blake2Bench
+public class BlakeBench
 {
 	public static IEnumerable<byte[]> Data() => BenchConfig.Data;
 
@@ -137,7 +141,11 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2bFast(byte[] data)
 	{
+#if NUGETBENCH
+		return Blake2Fast.Blake2b.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+#else
 		return Blake2Fast.Blake2b.HashData(BenchConfig.HashBytes, BenchConfig.Key, data);
+#endif
 	}
 
 	[Benchmark(Description = "Blake2Sharp"), BenchmarkCategory("Blake2b")]
@@ -229,7 +237,11 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2sFast(byte[] data)
 	{
+#if NUGETBENCH
+		return Blake2Fast.Blake2s.ComputeHash(BenchConfig.HashBytes, BenchConfig.Key, data);
+#else
 		return Blake2Fast.Blake2s.HashData(BenchConfig.HashBytes, BenchConfig.Key, data);
+#endif
 	}
 
 	[Benchmark(Description = "Blake2s-net"), BenchmarkCategory("Blake2s")]
@@ -260,14 +272,22 @@ public class Blake2Bench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2s256(byte[] data)
 	{
+#if NUGETBENCH
+		return Blake2Fast.Blake2s.ComputeHash(data);
+#else
 		return Blake2Fast.Blake2s.HashData(data);
+#endif
 	}
 
 	[Benchmark(Description = "BLAKE2-512"), BenchmarkCategory("OtherHash")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake2b256(byte[] data)
 	{
+#if NUGETBENCH
+		return Blake2Fast.Blake2b.ComputeHash(data);
+#else
 		return Blake2Fast.Blake2b.HashData(data);
+#endif
 	}
 
 	[Benchmark(Description = "MD5"), BenchmarkCategory("OtherHash")]

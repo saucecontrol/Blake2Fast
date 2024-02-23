@@ -11,7 +11,7 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 
-namespace Blake2Bench;
+namespace BlakeBench;
 
 class HashColumn : IColumn
 {
