@@ -3,6 +3,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+#if HWINTRINSICS
+using System.Runtime.Intrinsics.X86;
+#endif
 
 namespace Blake2Fast.Implementation;
 
@@ -47,7 +50,7 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 	private uint cc;
 	private uint sc;
 	private uint _pad;
-	private fixed uint cv[8 * 54];
+	private fixed uint cv[HashWords * 54];
 
 	private static ReadOnlySpan<byte> ivle => [
 		0x67, 0xe6, 0x09, 0x6a,
@@ -59,6 +62,13 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		0xab, 0xd9, 0x83, 0x1f,
 		0x19, 0xcd, 0xe0, 0x5b
 	];
+
+#if HWINTRINSICS
+	private static ReadOnlySpan<byte> rormask => [
+		2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
+		1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
+	];
+#endif
 
 	/// <inheritdoc />
 	public readonly int DigestLength => HashBytes;
@@ -72,8 +82,17 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		{
 			uint* sh = s->h;
 			uint* m = (uint*)pin;
-
-			mixScalar(sh, m, pout, trunc);
+#if HWINTRINSICS
+#if NET8_0_OR_GREATER
+				if (Avx512F.VL.IsSupported)
+					mixAvx512(sh, m, pout, trunc);
+				else
+#endif
+				if (Ssse3.IsSupported)
+					mixSsse3(sh, m, pout, trunc);
+				else
+#endif
+					mixScalar(sh, m, pout, trunc);
 		}
 
 		f &= ~(uint)Flags.StateFlags;

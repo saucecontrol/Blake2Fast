@@ -64,6 +64,6 @@ public class DefaultCustomConfig : CustomConfig
 {
 	public DefaultCustomConfig(bool includeHash = true) : base(includeHash)
 	{
-		AddJob(Job.ShortRun);
+		AddJob(Job.Default);
 	}
 }

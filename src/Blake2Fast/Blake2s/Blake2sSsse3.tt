@@ -1,7 +1,7 @@
 <#@ template language="C#" hostspecific="true" #>
 <#@ output extension=".g.cs" encoding="utf-8" #>
 <# var alg = b2s; string isa = Host.TemplateFile.Contains("Avx512") ? "Avx512" : "Ssse3"; #>
-<#@ include file="..\_Blake2Simd.ttinclude" #><#@ include file="..\_BlakeAlg.ttinclude" #>
+<#@ include file="..\_BlakeSimd.ttinclude" #><#@ include file="..\_BlakeAlg.ttinclude" #>
 <#+
 
 void loadrormasks() {

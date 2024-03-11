@@ -19,7 +19,7 @@ unsafe partial struct Blake<#= alg.suffix #>HashState
 {
 	// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static void mix<#= isa #>(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
+	private static void mix<#= isa #>(<#= alg.wtype #>* sh, <#= alg.wtype #>* m<#= alg == b3 ? $", {alg.wtype}* o, bool truncate" : "" #>)
 	{
 <#
 PushIndent("\t\t");

@@ -21,7 +21,7 @@ static class BenchConfig
 {
 	public const int HashBytes = 5;
 	public static readonly byte[] Key = [ ];
-	//public static readonly byte[] Key = "abc"u8.ToArray();
+	//public static readonly byte[] Key = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8.ToArray();
 
 	public static readonly List<byte[]> Data = [
 		"abc"u8.ToArray(),
@@ -126,6 +126,7 @@ class Program
 #if !NUGETBENCH
 		// BLAKE3
 		Console.WriteLine();
+		Console.WriteLine(bench.GetHashBlake3Ref(BenchConfig.Data.Last()).ToHexString());
 		Console.WriteLine(bench.GetHashBlake3Fast(BenchConfig.Data.Last()).ToHexString());
 
 #if NET7_0_OR_GREATER
@@ -177,7 +178,7 @@ public class BlakeBench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashByteTerrace2b(byte[] data)
 	{
-		var b2b = ByteTerrace.Maths.Cryptography.Blake2b.New(BenchConfig.Key, BenchConfig.HashBytes);
+		using var b2b = ByteTerrace.Maths.Cryptography.Blake2b.New(BenchConfig.Key, BenchConfig.HashBytes);
 		return b2b.ComputeHash(data);
 	}
 
@@ -273,7 +274,7 @@ public class BlakeBench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashByteTerrace2s(byte[] data)
 	{
-		var b2s = ByteTerrace.Maths.Cryptography.Blake2s.New(BenchConfig.Key, BenchConfig.HashBytes);
+		using var b2s = ByteTerrace.Maths.Cryptography.Blake2s.New(BenchConfig.Key, BenchConfig.HashBytes);
 		return b2s.ComputeHash(data);
 	}
 
@@ -283,6 +284,13 @@ public class BlakeBench
 	 * BLAKE3
 	 *
 	 */
+	//[Benchmark(Description = "Blake3Ref"), BenchmarkCategory("Blake3")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake3Ref(byte[] data)
+	{
+		return Blake3Ref.Hash(BenchConfig.HashBytes, data, BenchConfig.Key, default);
+	}
+
 	[Benchmark(Description = "Blake2Fast"), BenchmarkCategory("Blake3")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake3Fast(byte[] data)
@@ -295,7 +303,7 @@ public class BlakeBench
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake3Net(byte[] data)
 	{
-		var hasher = Blake3.Hasher.New();
+		using var hasher = Blake3.Hasher.New();
 		hasher.Update(data);
 		return hasher.Finalize().AsSpan().Slice(0, BenchConfig.HashBytes).ToArray();
 	}

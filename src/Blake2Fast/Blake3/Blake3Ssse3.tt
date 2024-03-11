@@ -1,0 +1,245 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ output extension=".g.cs" encoding="utf-8" #>
+<# var alg = b3; string isa = Host.TemplateFile.Contains("Avx512") ? "Avx512" : "Ssse3"; #>
+<#@ include file="..\_BlakeSimd.ttinclude" #><#@ include file="..\_BlakeAlg.ttinclude" #>
+<#+
+
+void loadrormasks() {
+#>
+var r16 = Sse2.LoadVector128(prm);
+var r8  = Sse2.LoadVector128(prm + Vector128<byte>.Count);
+<#+
+}
+
+void loadiv() {
+#>
+var row3 = Sse2.LoadVector128(piv);
+<#+
+}
+
+void loadstate() {
+#>
+var row1 = Sse2.LoadVector128(sh + zero);
+var row2 = Sse2.LoadVector128(sh + zero + Vector128<uint>.Count);
+var row4 = Sse2.LoadVector128(sh + zero + Vector128<uint>.Count * 2); // t, c, f
+<#+
+}
+
+void loadmsg1() {
+#>
+var m0 = Sse2.LoadVector128(m);
+var m1 = Sse2.LoadVector128(m + Vector128<uint>.Count);
+var m2 = Sse2.LoadVector128(m + Vector128<uint>.Count * 2);
+var m3 = Sse2.LoadVector128(m + Vector128<uint>.Count * 3);
+<#+
+}
+
+void loadmsg2() {
+}
+
+void csebreak() {
+}
+
+void finalize() {
+#>
+row1 = Sse2.Xor(row1, row3);
+row2 = Sse2.Xor(row2, row4);
+<#+
+	WriteLine(null);
+#>
+Sse2.Store(o, row1);
+Sse2.Store(o + Vector128<uint>.Count, row2);
+<#+
+	WriteLine(null);
+#>
+if (!truncate)
+{
+	row3 = Sse2.Xor(row3, Sse2.LoadVector128(sh));
+	row4 = Sse2.Xor(row4, Sse2.LoadVector128(sh + Vector128<uint>.Count));
+<#+
+	WriteLine(null);
+#>
+	Sse2.Store(o + Vector128<uint>.Count * 2, row3);
+	Sse2.Store(o + Vector128<uint>.Count * 3, row4);
+}
+<#+
+}
+
+void diagonalize(bool first = false) {
+#>
+row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
+row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
+row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
+<#+
+}
+
+void undiagonalize() {
+#>
+row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
+row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
+row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
+<#+
+}
+
+void g1(bool first = false) {
+#>
+row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
+<#+
+	if (Host.TemplateFile.Contains("Avx512")) {
+#>
+row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
+<#+
+	} else {
+#>
+row4 = Sse2.Xor(row4, row1);
+row4 = Ssse3.Shuffle(row4.AsByte(), r16).AsUInt32();
+<#+
+	}
+	WriteLine(null);
+#>
+row3 = Sse2.Add(row3, row4);
+<#+
+	if (Host.TemplateFile.Contains("Avx512")) {
+#>
+row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
+<#+
+	} else {
+#>
+row2 = Sse2.Xor(row2, row3);
+row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 12), Sse2.ShiftLeftLogical(row2, 32 - 12));
+<#+
+	}
+}
+
+void g2(bool first = false) {
+#>
+row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
+<#+
+	if (Host.TemplateFile.Contains("Avx512")) {
+#>
+row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
+<#+
+	} else {
+#>
+row4 = Sse2.Xor(row4, row1);
+row4 = Ssse3.Shuffle(row4.AsByte(), r8).AsUInt32();
+<#+
+	}
+	WriteLine(null);
+#>
+row3 = Sse2.Add(row3, row4);
+<#+
+	if (Host.TemplateFile.Contains("Avx512")) {
+#>
+row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
+<#+
+	} else {
+#>
+row2 = Sse2.Xor(row2, row3);
+row2 = Sse2.Xor(Sse2.ShiftRightLogical(row2, 7), Sse2.ShiftLeftLogical(row2, 32 - 7));
+<#+
+	}
+}
+
+void loadcode(int round, int part) {
+	int r = round % 10 * 10 + part;
+	switch (r) {
+		case 0:
+#>
+var p0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_10_00_10_00).AsUInt32();
+var b0 = p0;
+<#+
+			break;
+		case 1:
+#>
+var p1 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_11_01).AsUInt32();
+b0 = p1;
+<#+
+			break;
+		case 2:
+		// t0 = 8, 10, 12, 14
+#>
+var t0 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_00_10_00).AsUInt32();
+var p2 = Sse2.Shuffle(t0, 0b_10_01_00_11);
+b0 = p2;
+<#+
+			break;
+		case 3:
+		// t0 = 9, 11, 13, 15
+#>
+t0 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_11_01_11_01).AsUInt32();
+m3 = Sse2.Shuffle(t0, 0b_10_01_00_11);
+m0 = p0;
+m1 = p1;
+m2 = p2;
+b0 = m3;
+<#+
+			break;
+		case 10:
+		case 20:
+		case 30:
+		case 40:
+		case 50:
+		case 60:
+		// t0 = 2, 4, 3, 7
+#>
+t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
+p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
+b0 = p0;
+<#+
+			break;
+		case 11:
+		case 21:
+		case 31:
+		case 41:
+		case 51:
+		case 61:
+		// t0 = 4, 10, 6, 12
+		// t1 = 0, 2, 11, 13
+#>
+t0 = Sse2.UnpackHigh(m0, m2);
+<#= r == 11 ? "var " : "" #>t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
+p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
+b0 = p1;
+<#+
+			break;
+		case 12:
+		case 22:
+		case 32:
+		case 42:
+		case 52:
+		case 62:
+		// t0 = 15, 1, 9, 3
+		// t1 = 8, 12, 9, 11
+#>
+t0 = Sse2.UnpackLow(m3, m1);
+t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
+p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
+b0 = p2;
+<#+
+			break;
+		case 13:
+		case 23:
+		case 33:
+		case 43:
+		case 53:
+		case 63:
+		// t1 = 14, 8, 5, 7
+#>
+t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
+m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
+<#+
+		if (r != 63) {
+#>
+m0 = p0;
+m1 = p1;
+m2 = p2;
+<#+
+		}
+#>
+b0 = m3;
+<#+
+			break;
+	}
+}
+#>
