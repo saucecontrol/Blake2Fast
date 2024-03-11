@@ -11,24 +11,35 @@ namespace Blake2Fast.Implementation;
 
 unsafe partial struct Blake<#= alg.suffix #>HashState
 {
-	private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
+	private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m<#= alg == b3 ? $", {alg.wtype}* o, bool truncate" : "" #>)
 	{
 <#
 for (int i = 0; i < 16; i++) {
 #>
-		<#= alg.wtype #> m<#=i.ToString("d2")#> = m[<#=i.ToString("d2")#>];
+		<#= alg.wtype #> m<#=$"{i:d2}"#> = m[<#=$"{i:d2}"#>];
 <#
 }
 
 WriteLine(null);
 mixvars (alg, new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
-mixvars (alg, new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
+WriteLine(null);
+mixvars (alg, alg == b3 ? new[] { 8, 9, 10, 11 } : new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
+if (alg == b3) {
 #>
+		uint v12 = sh[8];  // tlo
+		uint v13 = sh[9];  // thi
+		uint v14 = sh[10]; // c
+		uint v15 = sh[11]; // f
+<#
+} else {
+#>
+
 		v12 ^= sh[8];  // t[0]
 		v13 ^= sh[9];  // t[1]
 		v14 ^= sh[10]; // f[0]
-
 <#
+}
+WriteLine(null);
 for (int i = 0; i < alg.rounds; i++) {
 	int s = i % 10;
 	WriteLine($"\t\t//ROUND {i+1}");
@@ -55,7 +66,22 @@ for (int i = 0; i < alg.rounds; i++) {
 
 for (int i = 0; i < 8; i++) {
 #>
-		sh[<#=i#>] ^= v<#=i.ToString("d2")#> ^ v<#=(i+8).ToString("d2")#>;
+		<#= alg == b3 ? "o" : "sh" #>[<#=i#>] <#= alg == b3 ? "=" : "^=" #> v<#=$"{i:d2}"#> ^ v<#=$"{i+8:d2}"#>;
+<#
+}
+if (alg == b3) {
+#>
+
+		if (!truncate)
+		{
+<#
+	for (int i = 0; i < 8; i++) {
+#>
+			o[<#=$"{i+8,2}"#>] = v<#=$"{i+8:d2}"#> ^ sh[<#=i#>];
+<#
+	}
+#>
+		}
 <#
 }
 #>
@@ -69,10 +95,9 @@ void mixvars(balg alg, int[] pos)
 {
 	foreach (int j in pos) {
 #>
-		<#= alg.wtype #> v<#=j.ToString("d2")#> = <#= j < 8 ? $"sh[{j}]" : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
+		<#= alg.wtype #> v<#=$"{j:d2}"#> = <#= j < 8 ? $"sh[{j}]" : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
 <#+
 	}
-	WriteLine(null);
 }
 
 void mix(balg alg, int a, int b, int c, int d, int s, int p)

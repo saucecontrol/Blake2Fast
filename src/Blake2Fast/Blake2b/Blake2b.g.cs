@@ -107,7 +107,7 @@ static class Blake2b
 	/// <remarks>Use this only if you require an implementation of <see cref="HashAlgorithm" />.  It is less efficient than the direct methods.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
 	/// <returns>A <see cref="HashAlgorithm" /> instance.</returns>
-	public static HashAlgorithm CreateHashAlgorithm(int digestLength) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake2b, digestLength, default);
+	public static HashAlgorithm CreateHashAlgorithm(int digestLength) => new BlakeHmac(BlakeHmac.Algorithm.Blake2b, digestLength, default);
 
 	/// <inheritdoc cref="CreateHMAC(int, ReadOnlySpan{byte})" />
 	public static HMAC CreateHMAC(ReadOnlySpan<byte> key) => CreateHMAC(DefaultDigestLength, key);
@@ -117,7 +117,7 @@ static class Blake2b
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
 	/// <param name="key">0 to 64 bytes of input for initializing the keyed hash.</param>
 	/// <returns>An <see cref="HMAC" /> instance.</returns>
-	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new Blake2Hmac(Blake2Hmac.Algorithm.Blake2b, digestLength, key);
+	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new BlakeHmac(BlakeHmac.Algorithm.Blake2b, digestLength, key);
 #endif
 
 #if BLAKE_PUBLIC

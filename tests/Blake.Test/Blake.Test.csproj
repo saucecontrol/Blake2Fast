@@ -23,6 +23,7 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="blake2-kat.json" />
+		<EmbeddedResource Include="blake3-kat.json" />
 	</ItemGroup>
 
 </Project>

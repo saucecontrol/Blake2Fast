@@ -1,5 +1,5 @@
 <#+
-	struct balg
+	class balg
 	{
 		public int bits;
 		public int rounds;
@@ -37,6 +37,16 @@
 		[ 10, 8, 7, 1, 2, 4, 6, 5, 13, 15, 9, 3, 0, 11, 14, 12 ]
 	];
 
+	static readonly byte[][] b3sigma = [
+		[ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
+		[ 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8 ],
+		[ 3, 4, 10, 12, 13, 2, 7, 14, 6, 5, 9, 0, 11, 15, 8, 1 ],
+		[ 10, 7, 12, 9, 14, 3, 13, 15, 4, 0, 11, 2, 5, 8, 1, 6 ],
+		[ 12, 13, 9, 11, 15, 10, 14, 8, 7, 2, 5, 3, 0, 1, 6, 4 ],
+		[ 9, 14, 11, 5, 8, 12, 15, 1, 13, 3, 0, 10, 2, 6, 4, 7 ],
+		[ 11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13 ],
+	];
+
 	static readonly balg b2b = new() {
 		bits = 64,
 		rounds = 12,
@@ -67,5 +77,21 @@
 			0x1f83d9abul, 0x5be0cd19ul
 		],
 		sigma = b2sigma
+	};
+
+	static readonly balg b3 = new() {
+		bits = 32,
+		rounds = 7,
+		suffix = "3",
+		wtype = "uint",
+		wsuff = "u",
+		ivfmt = "0x{0:x8}u",
+		iv = [
+			0x6a09e667ul, 0xbb67ae85ul,
+			0x3c6ef372ul, 0xa54ff53aul,
+			0x510e527ful, 0x9b05688cul,
+			0x1f83d9abul, 0x5be0cd19ul
+		],
+		sigma = b3sigma
 	};
 #>

@@ -61,6 +61,7 @@ class Program
 			1. Blake2Fast vs .NET in-box algorithms (MD5 and SHA2)
 			2. Blake2Fast BLAKE2b vs 3rd party libraries
 			3. Blake2Fast BLAKE2s vs 3rd party libraries
+			4. Blake2Fast BLAKE3  vs 3rd party libraries
 			5. Blake2Fast 2.0 vs Current
 			6. Blake2Fast performance on multiple runtimes (check SDK paths in Program.cs)
 			"""
@@ -78,6 +79,9 @@ class Program
 				break;
 			case ConsoleKey.D3:
 				BenchmarkRunner.Run<BlakeBench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter([ "Blake2s" ])));
+				break;
+			case ConsoleKey.D4:
+				BenchmarkRunner.Run<BlakeBench>(new DefaultCustomConfig().AddFilter(new AllCategoriesFilter(["Blake3"])));
 				break;
 			case ConsoleKey.D5:
 				BenchmarkRunner.Run<BlakeBench>(new MultipleVersionConfig().AddFilter(new AllCategoriesFilter(["JitTest"])));
@@ -118,6 +122,16 @@ class Program
 
 		Console.WriteLine(bench.GetHash2snet(BenchConfig.Data.Last()).ToHexString());
 		Console.WriteLine(bench.GetHashByteTerrace2s(BenchConfig.Data.Last()).ToHexString());
+
+#if !NUGETBENCH
+		// BLAKE3
+		Console.WriteLine();
+		Console.WriteLine(bench.GetHashBlake3Fast(BenchConfig.Data.Last()).ToHexString());
+
+#if NET7_0_OR_GREATER
+		Console.WriteLine(bench.GetHashBlake3Net(BenchConfig.Data.Last()).ToHexString());
+#endif
+#endif
 	}
 }
 
@@ -262,6 +276,31 @@ public class BlakeBench
 		var b2s = ByteTerrace.Maths.Cryptography.Blake2s.New(BenchConfig.Key, BenchConfig.HashBytes);
 		return b2s.ComputeHash(data);
 	}
+
+#if !NUGETBENCH
+	/*
+	 *
+	 * BLAKE3
+	 *
+	 */
+	[Benchmark(Description = "Blake2Fast"), BenchmarkCategory("Blake3")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake3Fast(byte[] data)
+	{
+		return Blake2Fast.Blake3.HashData(BenchConfig.HashBytes, BenchConfig.Key, new ReadOnlySpan<byte>(data));
+	}
+
+#if NET7_0_OR_GREATER
+	[Benchmark(Description = "Blake3Net"), BenchmarkCategory("Blake3")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake3Net(byte[] data)
+	{
+		var hasher = Blake3.Hasher.New();
+		hasher.Update(data);
+		return hasher.Finalize().AsSpan().Slice(0, BenchConfig.HashBytes).ToArray();
+	}
+#endif
+#endif
 
 	/*
 	 *

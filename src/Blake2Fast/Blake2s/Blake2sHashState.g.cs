@@ -23,7 +23,7 @@ public
 #else
 internal
 #endif
-unsafe partial struct Blake2sHashState : IBlake2Incremental
+unsafe partial struct Blake2sHashState : IBlakeIncremental
 {
 	internal const int WordSize = sizeof(uint);
 	internal const int BlockWords = 16;

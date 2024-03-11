@@ -62,5 +62,7 @@ internal static class ThrowHelper
 
 	public static void KeyTooLong(int max) => throw new ArgumentException($"Key must be between 0 and {max} bytes in length.", "key");
 
+	public static void KeyInvalid() => throw new ArgumentException($"If provided, the key must be exactly 32 bytes in length.", "key");
+
 	public static void OutputTooSmall(int min) => throw new ArgumentException($"Output must be at least {min} bytes in length.", "output");
 }

@@ -1,7 +1,7 @@
 <#@ template language="C#" hostspecific="true" #>
 <#@ output extension=".g.cs" encoding="utf-8" #>
 <# var alg = b2b; string isa = "Sse41"; #>
-<#@ include file="..\_Blake2Simd.ttinclude" #><#@ include file="..\_Blake2Alg.ttinclude" #>
+<#@ include file="..\_Blake2Simd.ttinclude" #><#@ include file="..\_BlakeAlg.ttinclude" #>
 <#+
 
 void loadrormasks() {

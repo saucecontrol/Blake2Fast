@@ -6,7 +6,7 @@ using System.Linq;
 using Xunit;
 using Blake2Fast;
 
-namespace Blake2Test;
+namespace BlakeTest;
 
 public class RfcSelfTest
 {

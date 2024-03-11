@@ -1,4 +1,4 @@
 <#@ template language="C#" #>
 <#@ output extension=".g.cs" encoding="utf-8" #>
-<# var alg = b2b; #>
+<# var alg = b3; #>
 <#@ include file="..\_BlakeScalar.ttinclude" #><#@ include file="..\_BlakeAlg.ttinclude" #>

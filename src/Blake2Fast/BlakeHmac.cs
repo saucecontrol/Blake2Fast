@@ -6,18 +6,19 @@ using System.Security.Cryptography;
 
 namespace Blake2Fast;
 
-internal sealed class Blake2Hmac : HMAC
+internal sealed class BlakeHmac : HMAC
 {
 	internal enum Algorithm
 	{
 		Blake2b,
-		Blake2s
+		Blake2s,
+		Blake3
 	}
 
 	private readonly Algorithm alg;
-	private IBlake2Incremental impl;
+	private IBlakeIncremental impl;
 
-	public Blake2Hmac(Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
+	public BlakeHmac(Algorithm hashAlg, int hashBytes, ReadOnlySpan<byte> key)
 	{
 		alg = hashAlg;
 		HashSizeValue = hashBytes * 8;
@@ -47,13 +48,16 @@ internal sealed class Blake2Hmac : HMAC
 	protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) => impl.TryFinish(destination, out bytesWritten);
 #endif
 
-	private IBlake2Incremental createIncrementalInstance()
+	private IBlakeIncremental createIncrementalInstance()
 	{
 		var key = new ReadOnlySpan<byte>(KeyValue);
 
-		return alg == Algorithm.Blake2b
-			? Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key)
-			: Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key);
+		return alg switch {
+			Algorithm.Blake2b => Blake2b.CreateIncrementalHasher(HashSizeValue / 8, key),
+			Algorithm.Blake2s => Blake2s.CreateIncrementalHasher(HashSizeValue / 8, key),
+			Algorithm.Blake3  => Blake3.CreateIncrementalHasher(key),
+			_ => throw new NotImplementedException()
+		};
 	}
 }
 #endif

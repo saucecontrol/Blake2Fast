@@ -11,7 +11,7 @@ public
 #else
 internal
 #endif
-interface IBlake2Incremental
+interface IBlakeIncremental
 {
 	/// <summary>The hash digest length for this instance, in bytes.</summary>
 	int DigestLength { get; }

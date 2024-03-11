@@ -21,6 +21,10 @@
 		<PackageReference Include="NSec.Cryptography" Version="22.4.0" />
 	</ItemGroup>
 
+	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+		<PackageReference Include="Blake3" Version="1.1.0" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Condition="$(DefineConstants.Contains('NUGETBENCH'))" Include="SauceControl.Blake2Fast" Version="2.0.0" />
 		<ProjectReference Condition="!$(DefineConstants.Contains('NUGETBENCH'))" Include="..\..\src\Blake2Fast\Blake2Fast.csproj" />

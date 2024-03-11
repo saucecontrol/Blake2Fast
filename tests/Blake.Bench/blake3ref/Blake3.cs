@@ -142,22 +142,20 @@ public static class Blake3Ref {
   // Each chunk or parent node can produce either an 8-word chaining value or, by
   // setting the ROOT flag, any number of final output bytes. The Output struct
   // captures the state just prior to choosing between those two possibilities.
-#pragma warning disable 8981
-  unsafe struct output {
+  unsafe struct _output {
     public fixed uint input_chaining_value[8];
     public fixed uint block_words[16];
     public ulong counter;
     public uint block_len;
     public uint flags;
   }
-#pragma warning restore 8981
 
-  static unsafe void output_chaining_value(output* self, Span<uint> @out) {
+  static unsafe void output_chaining_value(_output* self, Span<uint> @out) {
     compress(self->input_chaining_value, self->block_words, self->counter,
              self->block_len, self->flags, @out);
   }
 
-  static unsafe void output_root_bytes(output* self, void* @out,
+  static unsafe void output_root_bytes(_output* self, void* @out,
                                        nuint out_len) {
     byte* out_u8 = (byte*)@out;
     ulong output_block_counter = 0;
@@ -232,8 +230,8 @@ public static class Blake3Ref {
     }
   }
 
-  static unsafe output chunk_state_output(_blake3_chunk_state* self) {
-    output ret;
+  static unsafe _output chunk_state_output(_blake3_chunk_state* self) {
+    _output ret;
     Unsafe.CopyBlockUnaligned(ret.input_chaining_value, self->chaining_value, 8 * sizeof(uint));
     Unsafe.CopyBlockUnaligned(ret.block_words, self->block, BLAKE3_BLOCK_LEN);
     ret.counter = self->chunk_counter;
@@ -242,11 +240,11 @@ public static class Blake3Ref {
     return ret;
   }
 
-  static unsafe output parent_output(uint* left_child_cv,
+  static unsafe _output parent_output(uint* left_child_cv,
                                      uint* right_child_cv,
                                      uint* key_words,
                                      uint flags) {
-    output ret;
+    _output ret;
     Unsafe.CopyBlockUnaligned(ret.input_chaining_value, key_words, 8 * sizeof(uint));
     Unsafe.CopyBlockUnaligned(&ret.block_words[0], left_child_cv, 8 * sizeof(uint));
     Unsafe.CopyBlockUnaligned(&ret.block_words[8], right_child_cv, 8 * sizeof(uint));
@@ -261,7 +259,7 @@ public static class Blake3Ref {
                                uint* right_child_cv,
                                uint* key_words, uint flags,
                                Span<uint> @out) {
-    output o = parent_output(left_child_cv, right_child_cv, key_words, flags);
+    _output o = parent_output(left_child_cv, right_child_cv, key_words, flags);
     // We only write to `out` after we've read the inputs. That makes it safe for
     // `out` to alias an input, which we do below.
     output_chaining_value(&o, @out);
@@ -339,7 +337,7 @@ public static class Blake3Ref {
       // If the current chunk is complete, finalize it and reset the chunk state.
       // More input is coming, so this chunk is not ROOT.
       if (chunk_state_len(&self->chunk_state) == BLAKE3_CHUNK_LEN) {
-        output chunk_output = chunk_state_output(&self->chunk_state);
+        _output chunk_output = chunk_state_output(&self->chunk_state);
         output_chaining_value(&chunk_output, new Span<uint>(chunk_cv, 8));
         ulong total_chunks = self->chunk_state.chunk_counter + 1;
         hasher_add_chunk_cv(self, chunk_cv, total_chunks);
@@ -365,7 +363,7 @@ public static class Blake3Ref {
     // Starting with the output from the current chunk, compute all the parent
     // chaining values along the right edge of the tree, until we have the root
     // output.
-    output current_output = chunk_state_output(&self->chunk_state);
+    _output current_output = chunk_state_output(&self->chunk_state);
     nuint parent_nodes_remaining = (nuint)self->cv_stack_len;
     uint* current_cv = stackalloc uint[8];
     while (parent_nodes_remaining > 0) {
