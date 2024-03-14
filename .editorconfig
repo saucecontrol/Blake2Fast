@@ -14,6 +14,7 @@ indent_size = 2
 file_header_template = Copyright © Clinton Ingram and Contributors.  Licensed under the MIT License.
 
 csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_prefer_range_operator = false
 
 dotnet_diagnostic.CS8500.severity = silent
 dotnet_diagnostic.CS1573.severity = silent ; https://github.com/dotnet/roslyn/issues/40325

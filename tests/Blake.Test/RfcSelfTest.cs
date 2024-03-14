@@ -43,7 +43,7 @@ public class RfcSelfTest
 
 	private static byte[] blake2bSelfTest()
 	{
-		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
+		Blake2b.CreateIncrementalHasher(blake2bCheck.Length, out var inc);
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
 		foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
@@ -60,7 +60,7 @@ public class RfcSelfTest
 
 	private static byte[] blake2sSelfTest()
 	{
-		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
+		Blake2s.CreateIncrementalHasher(blake2sCheck.Length, out var inc);
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
 		foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
@@ -78,7 +78,7 @@ public class RfcSelfTest
 	private static byte[] blake2bNoAllocSelfTest()
 	{
 		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
-		var inc = Blake2b.CreateIncrementalHasher(blake2bCheck.Length);
+		Blake2b.CreateIncrementalHasher(blake2bCheck.Length, out var inc);
 
 		foreach (int diglen in new[] { 20, 32, 48, 64 })
 		foreach (int msglen in new[] { 0, 3, 128, 129, 255, 1024 })
@@ -93,13 +93,14 @@ public class RfcSelfTest
 			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [ ];
+		inc.Finish(buff);
+		return buff[..blake2bCheck.Length].ToArray();
 	}
 
 	private static byte[] blake2sNoAllocSelfTest()
 	{
-		Span<byte> buff = stackalloc byte[Blake2b.DefaultDigestLength];
-		var inc = Blake2s.CreateIncrementalHasher(blake2sCheck.Length);
+		Span<byte> buff = stackalloc byte[Blake2s.DefaultDigestLength];
+		Blake2s.CreateIncrementalHasher(blake2sCheck.Length, out var inc);
 
 		foreach (int diglen in new[] { 16, 20, 28, 32 })
 		foreach (int msglen in new[] { 0, 3, 64, 65, 255, 1024 })
@@ -114,7 +115,8 @@ public class RfcSelfTest
 			inc.Update(buff[..diglen]);
 		}
 
-		return inc.TryFinish(buff, out int len) ? buff[..len].ToArray() : [ ];
+		inc.Finish(buff);
+		return buff[..blake2sCheck.Length].ToArray();
 	}
 
 	private static byte[] blake2bHmacSelfTest()

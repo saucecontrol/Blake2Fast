@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="Package\build\*" Pack="true" PackagePath="build/netcoreapp2.1/;buildTransitive/netcoreapp2.1/" />
+		<None Include="Package\build\**" Pack="true" PackagePath="build;buildTransitive" />
 	</ItemGroup>
 
 	<ItemGroup>

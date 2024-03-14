@@ -14,6 +14,7 @@ internal
 interface IBlakeIncremental
 {
 	/// <summary>The hash digest length for this instance, in bytes.</summary>
+	/// <remarks>For BLAKE3, the digest length is variable and can be chosen on <see cref="Finish(Span{byte})"/>.  This value will return the default digest length.</remarks>
 	int DigestLength { get; }
 
 	/// <summary>Update the hash state with the bytes of all values in <paramref name="input" />.</summary>
@@ -44,12 +45,11 @@ interface IBlakeIncremental
 	/// <returns>The computed hash digest.</returns>
 	byte[] Finish();
 
-	/// <inheritdoc cref="TryFinish(Span{byte}, out int)" />
-	void Finish(Span<byte> output);
-
-	/// <summary>Finalize the hash, and copy the computed digest to <paramref name="output" />.</summary>
-	/// <param name="output">The buffer into which the hash digest should be written.  The buffer must have a capacity of at least <see cref="DigestLength" /> bytes for the method to succeed.</param>
-	/// <param name="bytesWritten">On return, contains the number of bytes written to <paramref name="output" />.</param>
-	/// <returns>True if the <paramref name="output" /> buffer was large enough to hold the digest, otherwise False.</returns>
-	bool TryFinish(Span<byte> output, out int bytesWritten);
+	/// <summary>Finalize the hash, and copy the computed digest to <paramref name="destination" />.</summary>
+	/// <param name="destination">The buffer into which the hash digest should be written.</param>
+	/// <remarks>
+	///   For BLAKE2, the buffer must have a capacity of at least <see cref="DigestLength" /> bytes, and exactly <see cref="DigestLength" /> bytes will be written.
+	///   For BLAKE3, the buffer must have a capacity of at least 1 byte, and the entire buffer will be filled.
+	/// </remarks>
+	void Finish(Span<byte> destination);
 }

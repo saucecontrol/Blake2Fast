@@ -105,21 +105,24 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		if (!BitConverter.IsLittleEndian) ThrowHelper.NoBigEndian();
 		if ((keylen & ~KeyBytes) != 0) ThrowHelper.KeyInvalid();
 
+		uint flags;
 		ref byte keyref = ref *(byte*)null;
 		if (keylen != 0)
 		{
 			keyref = ref MemoryMarshal.GetReference(key);
-			f = (uint)(Flags.KeyedHash | Flags.ChunkStart);
+			flags = (uint)(Flags.KeyedHash | Flags.ChunkStart);
 		}
 		else
 		{
 			keyref = ref MemoryMarshal.GetReference(ivle);
-			f = (uint)Flags.ChunkStart;
+			flags = (uint)Flags.ChunkStart;
 		}
 
 		Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref k[0]), ref keyref, KeyBytes);
 		Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref h[0]), ref keyref, KeyBytes);
+		Unsafe.InitBlockUnaligned(ref Unsafe.As<ulong, byte>(ref t), 0, KeyBytes);
 		c = BlockBytes;
+		f = flags;
 	}
 
 	private void updateChunk(ReadOnlySpan<byte> input)
@@ -297,19 +300,5 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		if (output.IsEmpty) ThrowHelper.OutputTooSmall(1);
 
 		finish(output);
-	}
-
-	/// <inheritdoc />
-	public bool TryFinish(Span<byte> output, out int bytesWritten)
-	{
-		if (output.IsEmpty)
-		{
-			bytesWritten = 0;
-			return false;
-		}
-
-		finish(output);
-		bytesWritten = output.Length;
-		return true;
 	}
 }

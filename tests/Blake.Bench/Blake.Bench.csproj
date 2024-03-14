@@ -18,6 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+		<PackageReference Include="Blake3Core" Version="0.1.0" />
 		<PackageReference Include="NSec.Cryptography" Version="22.4.0" />
 	</ItemGroup>
 

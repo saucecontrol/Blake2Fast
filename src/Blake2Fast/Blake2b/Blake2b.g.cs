@@ -8,6 +8,9 @@
 //------------------------------------------------------------------------------
 
 using System;
+#if NET5_0_OR_GREATER
+using System.Runtime.CompilerServices;
+#endif
 
 #if BLAKE_CRYPTOGRAPHY
 using System.Security.Cryptography;
@@ -40,13 +43,12 @@ static class Blake2b
 	/// <summary>Perform a one-shot BLAKE2b hash computation.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
-	/// <param name="key">0 to 64 bytes of input for initializing a keyed hash.</param>
+	/// <param name="key">1 to 64 bytes of input for initializing a keyed hash, or empty for non-keyed.</param>
 	/// <param name="source">The message bytes to hash.</param>
 	/// <returns>The computed hash digest from the message bytes in <paramref name="source" />.</returns>
 	public static byte[] HashData(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
 	{
-		var hs = default(Blake2bHashState);
-		hs.Init(digestLength, key);
+		CreateIncrementalHasher(digestLength, key, out var hs);
 		hs.Update(source);
 		return hs.Finish();
 	}
@@ -64,39 +66,42 @@ static class Blake2b
 	/// <summary>Perform a one-shot BLAKE2b hash computation and write the hash digest to <paramref name="destination" />.</summary>
 	/// <remarks>If you have all the input available at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
-	/// <param name="key">0 to 64 bytes of input for initializing a keyed hash.</param>
+	/// <param name="key">1 to 64 bytes of input for initializing a keyed hash, or empty for non-keyed.</param>
 	/// <param name="source">The message bytes to hash.</param>
 	/// <param name="destination">Destination buffer into which the hash digest is written.  The buffer must have a capacity of at least <paramref name="digestLength" /> bytes.</param>
 	public static void HashData(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		if (destination.Length < digestLength)
-			throw new ArgumentException($"Output buffer must have a capacity of at least {digestLength} bytes.", nameof(destination));
+		if ((uint)destination.Length < (uint)digestLength)
+			throw new ArgumentException($"Destination buffer must have a capacity of at least {digestLength} bytes.", nameof(destination));
 
-		var hs = default(Blake2bHashState);
-		hs.Init(digestLength, key);
+		CreateIncrementalHasher(digestLength, key, out var hs);
 		hs.Update(source);
 		hs.Finish(destination);
 	}
 
-	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2bHashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
+	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte}, out Blake2bHashState)" />
+	public static void CreateIncrementalHasher(out Blake2bHashState hashState) => CreateIncrementalHasher(DefaultDigestLength, default, out hashState);
 
-	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2bHashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
+	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte}, out Blake2bHashState)" />
+	public static void CreateIncrementalHasher(int digestLength, out Blake2bHashState hashState) => CreateIncrementalHasher(digestLength, default, out hashState);
 
-	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte})" />
-	public static Blake2bHashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
+	/// <inheritdoc cref="CreateIncrementalHasher(int, ReadOnlySpan{byte}, out Blake2bHashState)" />
+	public static void CreateIncrementalHasher(ReadOnlySpan<byte> key, out Blake2bHashState hashState) => CreateIncrementalHasher(DefaultDigestLength, key, out hashState);
 
 	/// <summary>Create and initialize an incremental BLAKE2b hash computation.</summary>
 	/// <remarks>If you will receive the input in segments rather than all at once, this is the most efficient way to calculate the hash.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
-	/// <param name="key">0 to 64 bytes of input for initializing a keyed hash.</param>
-	/// <returns>An <see cref="Blake2bHashState" /> instance for updating and finalizing the hash.</returns>
-	public static Blake2bHashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
+	/// <param name="key">1 to 64 bytes of input for initializing a keyed hash, or empty for non-keyed.</param>
+	/// <param name="hashState">On return, the initialized <see cref="Blake2bHashState" /> instance for updating and finalizing the hash.</param>
+	public static unsafe void CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key, out Blake2bHashState hashState)
 	{
-		var hs = default(Blake2bHashState);
-		hs.Init(digestLength, key);
-		return hs;
+#if NET5_0_OR_GREATER
+		Unsafe.SkipInit(out hashState);
+		hashState.Init(digestLength, key);
+#else
+		fixed (Blake2bHashState* phs = &hashState)
+			phs->Init(digestLength, key);
+#endif
 	}
 
 #if BLAKE_CRYPTOGRAPHY
@@ -115,7 +120,7 @@ static class Blake2b
 	/// <summary>Creates and initializes an <see cref="HMAC" /> instance that implements BLAKE2b keyed hashing.  Uses BLAKE2's built-in support for keyed hashing rather than the normal 2-pass approach.</summary>
 	/// <remarks>Use this only if you require an implementation of <see cref="HMAC" />.  It is less efficient than the direct methods.</remarks>
 	/// <param name="digestLength">The hash digest length in bytes.  Valid values are 1 to 64.</param>
-	/// <param name="key">0 to 64 bytes of input for initializing the keyed hash.</param>
+	/// <param name="key">1 to 64 bytes of input for initializing a keyed hash, or empty for non-keyed.</param>
 	/// <returns>An <see cref="HMAC" /> instance.</returns>
 	public static HMAC CreateHMAC(int digestLength, ReadOnlySpan<byte> key) => new BlakeHmac(BlakeHmac.Algorithm.Blake2b, digestLength, key);
 #endif
@@ -133,31 +138,45 @@ static class Blake2b
 	/// <inheritdoc cref="HashData(int, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
 	public static byte[] HashData(int digestLength, byte[] key, byte[] source) => HashData(digestLength, new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
 
-	private const string obsoleteMsg = "Use the new HashData method instead.";
-
 #pragma warning disable 1591
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static byte[] ComputeHash(ReadOnlySpan<byte> input) => HashData(DefaultDigestLength, default, input);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> input) => HashData(digestLength, default, input);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static byte[] ComputeHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => HashData(DefaultDigestLength, key, input);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static byte[] ComputeHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input) => HashData(digestLength, key, input);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static void ComputeAndWriteHash(ReadOnlySpan<byte> input, Span<byte> output) => HashData(DefaultDigestLength, default, input, output);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> input, Span<byte> output) => HashData(digestLength, default, input, output);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static void ComputeAndWriteHash(ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => HashData(DefaultDigestLength, key, input, output);
 
-	[Obsolete(obsoleteMsg)]
+	[Obsolete("Use the new HashData method instead.")]
 	public static void ComputeAndWriteHash(int digestLength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> input, Span<byte> output) => HashData(digestLength, key, input, output);
+
+	[Obsolete("Use an overload with out parameter instead.")]
+	public static Blake2bHashState CreateIncrementalHasher() => CreateIncrementalHasher(DefaultDigestLength, default);
+
+	[Obsolete("Use an overload with out parameter instead.")]
+	public static Blake2bHashState CreateIncrementalHasher(int digestLength) => CreateIncrementalHasher(digestLength, default);
+
+	[Obsolete("Use an overload with out parameter instead.")]
+	public static Blake2bHashState CreateIncrementalHasher(ReadOnlySpan<byte> key) => CreateIncrementalHasher(DefaultDigestLength, key);
+
+	[Obsolete("Use an overload with out parameter instead.")]
+	public static Blake2bHashState CreateIncrementalHasher(int digestLength, ReadOnlySpan<byte> key)
+	{
+		Blake2b.CreateIncrementalHasher(digestLength, key, out var hs);
+		return hs;
+	}
 #endif
 }

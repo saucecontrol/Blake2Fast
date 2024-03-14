@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Json;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 using Xunit;
 using Blake2Fast;
@@ -15,7 +16,7 @@ public struct KatEntry2(JsonObject o)
 	public string Alg = o["hash"];
 	public byte[] Key = Util.ConvertHexToBytes(o["key"]);
 	public byte[] Data = Util.ConvertHexToBytes(o["in"]);
-	public byte[] Digest = Util.ConvertHexToBytes(o["out"]);
+	public byte[] Hash = Util.ConvertHexToBytes(o["out"]);
 
 	public static readonly KatEntry2[] Values = getKatValues();
 
@@ -39,7 +40,6 @@ public struct KatEntry3(JsonObject o)
 	public int InputLen = o["input_len"];
 	public byte[] Hash = Util.ConvertHexToBytes(o["hash"]);
 	public byte[] KeyedHash = Util.ConvertHexToBytes(o["keyed_hash"]);
-	public byte[] DeriveKey = Util.ConvertHexToBytes(o["derive_key"]);
 
 	private static readonly byte[] data = getData();
 
@@ -67,6 +67,7 @@ public struct KatEntry3(JsonObject o)
 	}
 }
 
+[SkipLocalsInit]
 public class KnownAnswerTest
 {
 	// DateTime is Auto layout, so this struct size differs between runtimes with default padding (net7+ is 12 bytes, older is 16 bytes)
@@ -118,53 +119,48 @@ public class KnownAnswerTest
 		return impl.Finish();
 	}
 
-	private static byte[] compute3(int inlen, int outlen = Blake3.DefaultDigestLength, bool keyed = false)
-	{
-		byte[] hash = new byte[outlen];
-		var impl = Blake3.CreateIncrementalHasher(keyed ? KatEntry3.Key : default);
-		impl.Update(KatEntry3.GetData(inlen));
-		impl.Finish(hash);
-
-		return hash;
-	}
-
 	[Theory]
 	[MemberData(nameof(KatEntry2.Blake2b), MemberType = typeof(KatEntry2))]
 	public void KatBlake2b(KatEntry2 ka)
 	{
-		var hash = compute(Blake2b.CreateIncrementalHasher(), ka.Data);
-		Assert.Equal(ka.Digest, hash);
+		Blake2b.CreateIncrementalHasher(out var hs);
+		var hash = compute(hs, ka.Data);
+		Assert.Equal(ka.Hash, hash);
 	}
 
 	[Theory]
 	[MemberData(nameof(KatEntry2.Blake2s), MemberType = typeof(KatEntry2))]
 	public void KatBlake2s(KatEntry2 ka)
 	{
-		var hash = compute(Blake2s.CreateIncrementalHasher(), ka.Data);
-		Assert.Equal(ka.Digest, hash);
+		Blake2s.CreateIncrementalHasher(out var hs);
+		var hash = compute(hs, ka.Data);
+		Assert.Equal(ka.Hash, hash);
 	}
 
 	[Theory]
 	[MemberData(nameof(KatEntry2.Blake2bKeyed), MemberType = typeof(KatEntry2))]
 	public void KatBlake2bKeyed(KatEntry2 ka)
 	{
-		var hash = compute(Blake2b.CreateIncrementalHasher(ka.Key), ka.Data);
-		Assert.Equal(ka.Digest, hash);
+		Blake2b.CreateIncrementalHasher(ka.Key, out var hs);
+		var hash = compute(hs, ka.Data);
+		Assert.Equal(ka.Hash, hash);
 	}
 
 	[Theory]
 	[MemberData(nameof(KatEntry2.Blake2sKeyed), MemberType = typeof(KatEntry2))]
 	public void KatBlake2sKeyed(KatEntry2 ka)
 	{
-		var hash = compute(Blake2s.CreateIncrementalHasher(ka.Key), ka.Data);
-		Assert.Equal(ka.Digest, hash);
+		Blake2s.CreateIncrementalHasher(ka.Key, out var hs);
+		var hash = compute(hs, ka.Data);
+		Assert.Equal(ka.Hash, hash);
 	}
 
 	[Theory]
 	[MemberData(nameof(KatEntry3.Values), MemberType = typeof(KatEntry3))]
 	public void KatBlake3(KatEntry3 ka)
 	{
-		var hash = compute(Blake3.CreateIncrementalHasher(), KatEntry3.GetData(ka.InputLen));
+		Blake3.CreateIncrementalHasher(out var impl);
+		var hash = compute(impl, KatEntry3.GetData(ka.InputLen));
 		Assert.Equal(ka.Hash.AsSpan(0, Blake3.DefaultDigestLength).ToArray(), hash);
 	}
 
@@ -172,19 +168,25 @@ public class KnownAnswerTest
 	[MemberData(nameof(KatEntry3.Values), MemberType = typeof(KatEntry3))]
 	public void KatBlake3Keyed(KatEntry3 ka)
 	{
-		var hash = compute3(ka.InputLen, ka.KeyedHash.Length, true);
+		var hash = Blake3.HashData(ka.KeyedHash.Length, KatEntry3.Key, KatEntry3.GetData(ka.InputLen));
 		Assert.Equal(ka.KeyedHash, hash);
 	}
 
 	[Fact]
 	public void UpdateThrowsOnRefContainingT()
 	{
-		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(KatEntry2.Values.First()));
+		Assert.Throws<NotSupportedException>(() => {
+			Blake2b.CreateIncrementalHasher(out var hs);
+			hs.Update(KatEntry2.Values.First());
+		});
 	}
 
 	[Fact]
 	public void UpdateThrowsOnRefContainingSpanT()
 	{
-		Assert.Throws<NotSupportedException>(() => Blake2b.CreateIncrementalHasher().Update(KatEntry2.Values));
+		Assert.Throws<NotSupportedException>(() => {
+			Blake2b.CreateIncrementalHasher(out var hs);
+			hs.Update(KatEntry2.Values);
+		});
 	}
 }

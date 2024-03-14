@@ -108,13 +108,16 @@ unsafe partial struct Blake2bHashState : IBlakeIncremental
 		if (digestLength == 0 || (uint)digestLength > HashBytes) ThrowHelper.DigestInvalidLength(HashBytes);
 		if (keylen > MaxKeyBytes) ThrowHelper.KeyTooLong(MaxKeyBytes);
 
+		Unsafe.InitBlock(ref Unsafe.As<ulong, byte>(ref t[0]), 0, sizeof(ulong) * 4);
 		outlen = (uint)digestLength;
+		c = 0;
 
 		Unsafe.CopyBlock(ref Unsafe.As<ulong, byte>(ref h[0]), ref MemoryMarshal.GetReference(ivle), HashBytes);
 		h[0] ^= 0x01010000u ^ (keylen << 8) ^ outlen;
 
 		if (keylen != 0)
 		{
+			Unsafe.InitBlockUnaligned(ref b[0], 0, BlockBytes);
 			Unsafe.CopyBlockUnaligned(ref b[0], ref MemoryMarshal.GetReference(key), keylen);
 			c = BlockBytes;
 		}
@@ -224,19 +227,5 @@ unsafe partial struct Blake2bHashState : IBlakeIncremental
 		if ((uint)output.Length < outlen) ThrowHelper.OutputTooSmall(DigestLength);
 
 		finish(output);
-	}
-
-	/// <inheritdoc />
-	public bool TryFinish(Span<byte> output, out int bytesWritten)
-	{
-		if ((uint)output.Length < outlen)
-		{
-			bytesWritten = 0;
-			return false;
-		}
-
-		finish(output);
-		bytesWritten = (int)outlen;
-		return true;
 	}
 }

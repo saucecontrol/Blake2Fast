@@ -98,39 +98,43 @@ class Program
 	private static void singleRun()
 	{
 		var bench = new BlakeBench();
+		byte[] data = BenchConfig.Data.Last();
 
 		// BLAKE2B
 		Console.WriteLine();
-		Console.WriteLine(bench.GetHashBlake2bRfc(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashBlake2bFast(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2bRfc(data).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2bFast(data).ToHexString());
 
-		Console.WriteLine(bench.GetHashBlake2Sharp(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashByteTerrace2b(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashDHB2(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashICB2(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashKSB2(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashBlake2Core(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2Sharp(data).ToHexString());
+		Console.WriteLine(bench.GetHashByteTerrace2b(data).ToHexString());
+		Console.WriteLine(bench.GetHashDHB2(data).ToHexString());
+		Console.WriteLine(bench.GetHashICB2(data).ToHexString());
+		Console.WriteLine(bench.GetHashKSB2(data).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2Core(data).ToHexString());
 
 #if NET6_0_OR_GREATER
-		Console.WriteLine(bench.GetHashNSec(BenchConfig.Data.Last()).ToHexString()); // not RFC-compliant -- result will be all 0s when digest size < default
+		Console.WriteLine(bench.GetHashNSec(data).ToHexString()); // not RFC-compliant -- result will be all 0s when digest size < default
 #endif
 
 		// BLAKE2S
 		Console.WriteLine();
-		Console.WriteLine(bench.GetHashBlake2sRfc(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashBlake2sFast(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2sRfc(data).ToHexString());
+		Console.WriteLine(bench.GetHashBlake2sFast(data).ToHexString());
 
-		Console.WriteLine(bench.GetHash2snet(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashByteTerrace2s(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHash2snet(data).ToHexString());
+		Console.WriteLine(bench.GetHashByteTerrace2s(data).ToHexString());
 
 #if !NUGETBENCH
 		// BLAKE3
 		Console.WriteLine();
-		Console.WriteLine(bench.GetHashBlake3Ref(BenchConfig.Data.Last()).ToHexString());
-		Console.WriteLine(bench.GetHashBlake3Fast(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake3Ref(data).ToHexString());
+		Console.WriteLine(bench.GetHashBlake3Fast(data).ToHexString());
 
+#if NET6_0_OR_GREATER
+		Console.WriteLine(bench.GetHashBlake3Core(data).ToHexString());
 #if NET7_0_OR_GREATER
-		Console.WriteLine(bench.GetHashBlake3Net(BenchConfig.Data.Last()).ToHexString());
+		Console.WriteLine(bench.GetHashBlake3Net(data).ToHexString());
+#endif
 #endif
 #endif
 	}
@@ -298,14 +302,24 @@ public class BlakeBench
 		return Blake2Fast.Blake3.HashData(BenchConfig.HashBytes, BenchConfig.Key, new ReadOnlySpan<byte>(data));
 	}
 
+#if NET6_0_OR_GREATER
+	[Benchmark(Description = "Blake3Core"), BenchmarkCategory("Blake3")]
+	[ArgumentsSource(nameof(Data))]
+	public byte[] GetHashBlake3Core(byte[] data)
+	{
+		using var b3 = new Blake3Core.Blake3();
+		return b3.ComputeHash(data).AsSpan(0, 5).ToArray();
+	}
+#endif
+
 #if NET7_0_OR_GREATER
 	[Benchmark(Description = "Blake3Net"), BenchmarkCategory("Blake3")]
 	[ArgumentsSource(nameof(Data))]
 	public byte[] GetHashBlake3Net(byte[] data)
 	{
-		using var hasher = Blake3.Hasher.New();
-		hasher.Update(data);
-		return hasher.Finalize().AsSpan().Slice(0, BenchConfig.HashBytes).ToArray();
+		using var b3 = Blake3.Hasher.New();
+		b3.Update(data);
+		return b3.Finalize().AsSpan().Slice(0, BenchConfig.HashBytes).ToArray();
 	}
 #endif
 #endif
