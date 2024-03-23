@@ -10,458 +10,112 @@
 #if HWINTRINSICS && NET8_0_OR_GREATER
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace Blake2Fast.Implementation;
 
 unsafe partial struct Blake3HashState
 {
-	// SIMD algorithm described in https://eprint.iacr.org/2012/275.pdf
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static void mixAvx512(uint* sh, uint* m, uint* o, bool truncate)
+	private static void mixAvx512(ref uint sh, ref uint m, ref uint st, ref uint o, bool truncate)
 	{
-		// This nonsense breaks CSE of these reads, ensuring JIT allocates low regsiters to them.
-		nuint zero = Sse2.CompareGreaterThan(Vector128<int>.Zero, Vector128<int>.Zero).AsUInt32().ToScalar();
-		uint* piv = (uint*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(ivle)) + zero;
-		var row3 = Sse2.LoadVector128(piv);
+		var row3 = Vector128.Create(0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au);     // iv
+		var row4 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref st)); // t, c, f
 
-		// Again breaking CSE, otherwise JIT wastes good registers caching these reads that aren't used again until the end.
-		var row1 = Sse2.LoadVector128(sh + zero);
-		var row2 = Sse2.LoadVector128(sh + zero + Vector128<uint>.Count);
-		var row4 = Sse2.LoadVector128(sh + zero + Vector128<uint>.Count * 2); // t, c, f
+		var row1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref sh, 0)));
+		var row2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref sh, (nuint)Vector128<uint>.Count)));
 
-		var m0 = Sse2.LoadVector128(m);
-		var m1 = Sse2.LoadVector128(m + Vector128<uint>.Count);
-		var m2 = Sse2.LoadVector128(m + Vector128<uint>.Count * 2);
-		var m3 = Sse2.LoadVector128(m + Vector128<uint>.Count * 3);
+		var m0 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref m, 0)));
+		var m1 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref m, (nuint)Vector128<uint>.Count)));
 
-		//ROUND 1
 		var p0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_10_00_10_00).AsUInt32();
-		var b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
 		var p1 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_11_01).AsUInt32();
-		b0 = p1;
 
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
+		var m2 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref m, (nuint)Vector128<uint>.Count * 2)));
+		var m3 = Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref m, (nuint)Vector128<uint>.Count * 3)));
 
 		var t0 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_00_10_00).AsUInt32();
+		var t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_11_01_11_01).AsUInt32();
 		var p2 = Sse2.Shuffle(t0, 0b_10_01_00_11);
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_11_01_11_01).AsUInt32();
-		m3 = Sse2.Shuffle(t0, 0b_10_01_00_11);
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 2
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		var t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 3
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 4
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 5
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 6
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		m0 = p0;
-		m1 = p1;
-		m2 = p2;
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
-
-		//ROUND 7
-		t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
-		p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
-		b0 = p0;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.UnpackHigh(m0, m2);
-		t1 = Sse2.Shuffle(m0.AsDouble(), m3.AsDouble(), 0b_10).AsUInt32();
-		p1 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_11_00_01_10).AsUInt32();
-		b0 = p1;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//DIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
-
-		t0 = Sse2.UnpackLow(m3, m1);
-		t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
-		p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
-		b0 = p2;
-
-		//G1
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
-
-		t0 = Sse2.Shuffle(m2.AsDouble(), m1.AsDouble(), 0b_10).AsUInt32();
-		m3 = Sse.Shuffle(t1.AsSingle(), t0.AsSingle(), 0b_00_10_11_00).AsUInt32();
-		b0 = m3;
-
-		//G2
-		row1 = Sse2.Add(Sse2.Add(row1, b0), row2);
-		row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
-
-		row3 = Sse2.Add(row3, row4);
-		row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
-
-		//UNDIAGONALIZE
-		row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
-		row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
-		row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
+		var p3 = Sse2.Shuffle(t1, 0b_10_01_00_11);
+
+		for (uint i = 7;;)
+		{
+			//G1
+			row1 = Sse2.Add(Sse2.Add(row1, p0), row2);
+			row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
+
+			//G2
+			row1 = Sse2.Add(Sse2.Add(row1, p1), row2);
+			row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
+
+			//DIAGONALIZE
+			row1 = Sse2.Shuffle(row1, 0b_10_01_00_11);
+			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
+			row3 = Sse2.Shuffle(row3, 0b_00_11_10_01);
+
+			//G1
+			row1 = Sse2.Add(Sse2.Add(row1, p2), row2);
+			row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 16);
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 12);
+
+			//G2
+			row1 = Sse2.Add(Sse2.Add(row1, p3), row2);
+			row4 = Avx512F.VL.RotateRight(Sse2.Xor(row4, row1), 8);
+
+			row3 = Sse2.Add(row3, row4);
+			row2 = Avx512F.VL.RotateRight(Sse2.Xor(row2, row3), 7);
+
+			//UNDIAGONALIZE
+			row1 = Sse2.Shuffle(row1, 0b_00_11_10_01);
+			row4 = Sse2.Shuffle(row4, 0b_01_00_11_10);
+			row3 = Sse2.Shuffle(row3, 0b_10_01_00_11);
+
+			if (--i == 0)
+				break;
+
+			m0 = p0;
+			m1 = p1;
+			m2 = p2;
+			m3 = p3;
+
+			//PERMUTE
+			t0 = Sse.Shuffle(m0.AsSingle(), m1.AsSingle(), 0b_11_01_10_01).AsUInt32();
+			t1 = Sse2.UnpackHigh(m0, m2);
+			var t2 = Avx2.Blend(m0, m3, 0b_1100);
+
+			p0 = Sse2.Shuffle(t0, 0b_01_11_10_00).AsUInt32();
+			p1 = Sse.Shuffle(t1.AsSingle(), t2.AsSingle(), 0b_11_00_01_10).AsUInt32();
+
+			t0 = Sse2.UnpackLow(m3, m1);
+			t1 = Sse.Shuffle(m2.AsSingle(), m3.AsSingle(), 0b_10_01_11_01).AsUInt32();
+			t2 = Avx2.Blend(m2, m1, 0b_1100);
+
+			p2 = Sse.Shuffle(t0.AsSingle(), t1.AsSingle(), 0b_10_01_01_00).AsUInt32();
+			p3 = Sse.Shuffle(t1.AsSingle(), t2.AsSingle(), 0b_00_10_11_00).AsUInt32();
+		}
 
 		row1 = Sse2.Xor(row1, row3);
 		row2 = Sse2.Xor(row2, row4);
 
-		Sse2.Store(o, row1);
-		Sse2.Store(o + Vector128<uint>.Count, row2);
+		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref o, 0)), row1);
+		Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref o, (nuint)Vector128<uint>.Count)), row2);
 
 		if (!truncate)
 		{
-			row3 = Sse2.Xor(row3, Sse2.LoadVector128(sh));
-			row4 = Sse2.Xor(row4, Sse2.LoadVector128(sh + Vector128<uint>.Count));
+			row3 = Sse2.Xor(row3, Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref sh, 0))));
+			row4 = Sse2.Xor(row4, Unsafe.ReadUnaligned<Vector128<uint>>(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref sh, (nuint)Vector128<uint>.Count))));
 
-			Sse2.Store(o + Vector128<uint>.Count * 2, row3);
-			Sse2.Store(o + Vector128<uint>.Count * 3, row4);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref o, (nuint)Vector128<uint>.Count * 2)), row3);
+			Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref Unsafe.Add(ref o, (nuint)Vector128<uint>.Count * 3)), row4);
 		}
 	}
 }

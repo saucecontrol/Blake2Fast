@@ -11,6 +11,7 @@ namespace Blake2Fast.Implementation;
 
 /// <summary>Defines the state associated with an incremental BLAKE3 hashing operation.</summary>
 //// <remarks>Instances of this struct must be created by <see cref="Blake3.CreateIncrementalHasher()" />.  An instance created directly will be unusable.</remarks>
+[StructLayout(LayoutKind.Sequential)]
 #if BLAKE_PUBLIC
 public
 #else
@@ -40,9 +41,8 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 	internal const int HashBytes = HashWords * WordSize;
 	internal const int KeyBytes = HashBytes;
 
- 	private fixed byte b[BlockBytes];
+	private fixed byte b[BlockBytes];
 	private fixed uint k[HashWords];
-	private fixed uint h[HashWords];
 	private ulong t;
 	private uint c;
 	private uint f;
@@ -63,37 +63,29 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		0x19, 0xcd, 0xe0, 0x5b
 	];
 
-#if HWINTRINSICS
-	private static ReadOnlySpan<byte> rormask => [
-		2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13, //r16
-		1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12  //r8
-	];
-#endif
-
 	/// <inheritdoc />
 	public readonly int DigestLength => HashBytes;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void compress(ref byte input, ref uint output, bool trunc)
 	{
-		fixed (byte* pin = &input)
-		fixed (uint* pout = &output)
-		fixed (Blake3HashState* s = &this)
-		{
-			uint* sh = s->h;
-			uint* m = (uint*)pin;
+		ref uint ri = ref Unsafe.As<byte, uint>(ref input);
+		ref uint rt = ref Unsafe.As<ulong, uint>(ref t);
+		ref uint rh = ref k[0];
+		if ((f & (uint)(Flags.Parent | Flags.ChunkStart)) == 0)
+			rh = ref cv[sc * HashWords];
+
 #if HWINTRINSICS
 #if NET8_0_OR_GREATER
-				if (Avx512F.VL.IsSupported)
-					mixAvx512(sh, m, pout, trunc);
-				else
+		if (Avx512F.VL.IsSupported)
+			mixAvx512(ref rh, ref ri, ref rt, ref output, trunc);
+		else
 #endif
-				if (Ssse3.IsSupported)
-					mixSsse3(sh, m, pout, trunc);
-				else
+		if (Ssse3.IsSupported)
+			mixSsse3(ref rh, ref ri, ref rt, ref output, trunc);
+		else
 #endif
-					mixScalar(sh, m, pout, trunc);
-		}
+			mixScalar(ref rh, ref ri, ref rt, ref output, trunc);
 
 		f &= ~(uint)Flags.StateFlags;
 	}
@@ -118,9 +110,8 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 			flags = (uint)Flags.ChunkStart;
 		}
 
-		Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref k[0]), ref keyref, KeyBytes);
-		Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref h[0]), ref keyref, KeyBytes);
 		Unsafe.InitBlockUnaligned(ref Unsafe.As<ulong, byte>(ref t), 0, KeyBytes);
+		Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref k[0]), ref keyref, KeyBytes);
 		c = BlockBytes;
 		f = flags;
 	}
@@ -139,24 +130,20 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 				rinput = ref Unsafe.Add(ref rinput, (nint)blockrem);
 			}
 
-			compress(ref b[0], ref h[0], true);
+			compress(ref b[0], ref cv[sc * HashWords], true);
 
 			remaining -= blockrem;
 			cc += BlockBytes;
 			bc = 0;
 		}
 
-		if (remaining > BlockBytes)
+		while (remaining > BlockBytes)
 		{
-			uint cb = (remaining - 1) & ~((uint)BlockBytes - 1);
-			for (uint i = 0; i < cb / BlockBytes; i++)
-			{
-				compress(ref rinput, ref h[0], true);
-				rinput = ref Unsafe.Add(ref rinput, BlockBytes);
-			}
+			compress(ref rinput, ref cv[sc * HashWords], true);
+			rinput = ref Unsafe.Add(ref rinput, BlockBytes);
 
-			remaining -= cb;
-			cc += cb;
+			remaining -= BlockBytes;
+			cc += BlockBytes;
 		}
 
 		if (remaining != 0)
@@ -166,42 +153,67 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void mergeStack(ulong cc)
+	{
+		while ((cc & 1) == 0)
+		{
+			sc--;
+			t = 0;
+			f |= (uint)Flags.Parent;
+
+			compress(ref Unsafe.As<uint, byte>(ref cv[sc * HashWords]), ref cv[sc * HashWords], true);
+			cc >>>= 1;
+		}
+		sc++;
+	}
+
 	private void update(ReadOnlySpan<byte> input)
 	{
-		while (!input.IsEmpty)
+		uint clen = cc + bc;
+		if (clen != 0)
 		{
-			if (cc + bc == ChunkBytes)
+			int crem = Math.Min(ChunkBytes - (int)clen, input.Length);
+			updateChunk(input.Slice(0, crem));
+
+			input = input.Slice(crem);
+			if (!input.IsEmpty)
 			{
 				f |= (uint)Flags.ChunkEnd;
-				compress(ref b[0], ref h[0], true);
+				compress(ref b[0], ref cv[sc * HashWords], true);
 
 				ulong chunk = checked(t + 1);
-				ulong depth = chunk;
-				while ((depth & 1) == 0)
-				{
-					sc--;
-					Unsafe.CopyBlockUnaligned(ref b[0], ref Unsafe.As<uint, byte>(ref cv[sc * HashWords]), HashBytes);
-					Unsafe.CopyBlockUnaligned(ref b[HashBytes], ref Unsafe.As<uint, byte>(ref h[0]), HashBytes);
-					Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref h[0]), ref Unsafe.As<uint, byte>(ref k[0]), KeyBytes);
-					t = 0;
-					f |= (uint)Flags.Parent;
+				mergeStack(chunk);
 
-					compress(ref b[0], ref h[0], true);
-					depth >>>= 1;
-				}
-				Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref cv[(nuint)sc * HashWords]), ref Unsafe.As<uint, byte>(ref h[0]), HashBytes);
-				sc++;
-
-				Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref h[0]), ref Unsafe.As<uint, byte>(ref k[0]), KeyBytes);
 				t = chunk;
 				f |= (uint)Flags.ChunkStart;
 				cc = bc = 0;
 			}
-
-			int chunkrem = Math.Min(ChunkBytes - (int)(cc + bc), input.Length);
-			updateChunk(input.Slice(0, chunkrem));
-			input = input.Slice(chunkrem);
 		}
+
+		while (input.Length > ChunkBytes)
+		{
+			ref byte rinput = ref MemoryMarshal.GetReference(input);
+			for (uint i = 1; i <= ChunkBlocks; i++)
+			{
+				if (i == ChunkBlocks)
+					f |= (uint)Flags.ChunkEnd;
+
+				compress(ref rinput, ref cv[sc * HashWords], true);
+				rinput = ref Unsafe.Add(ref rinput, BlockBytes);
+			}
+
+			ulong chunk = checked(t + 1);
+			mergeStack(chunk);
+
+			t = chunk;
+			f |= (uint)Flags.ChunkStart;
+
+			input = input.Slice(ChunkBytes);
+		}
+
+		if (!input.IsEmpty)
+			updateChunk(input);
 	}
 
 	/// <inheritdoc />
@@ -251,17 +263,17 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 		}
 
 		f |= (uint)Flags.ChunkEnd;
+		ref byte rblock = ref b[0];
 
-		while (sc-- != 0)
+		while (sc > 0)
 		{
-			compress(ref b[0], ref h[0], true);
+			compress(ref rblock, ref cv[sc * HashWords], true);
+			sc--;
 
-			Unsafe.CopyBlockUnaligned(ref b[0], ref Unsafe.As<uint, byte>(ref cv[sc * HashWords]), HashBytes);
-			Unsafe.CopyBlockUnaligned(ref b[HashBytes], ref Unsafe.As<uint, byte>(ref h[0]), HashBytes);
-			Unsafe.CopyBlockUnaligned(ref Unsafe.As<uint, byte>(ref h[0]), ref Unsafe.As<uint, byte>(ref k[0]), KeyBytes);
 			t = 0;
 			c = BlockBytes;
 			f |= (uint)Flags.Parent;
+			rblock = ref Unsafe.As<uint, byte>(ref cv[sc * HashWords]);
 		}
 
 		f |= (uint)Flags.Root;
@@ -269,7 +281,7 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 
 		while (!hash.IsEmpty)
 		{
-			compress(ref b[0], ref cv[0], hash.Length <= HashBytes);
+			compress(ref rblock, ref cv[2 * HashWords], hash.Length <= HashBytes);
 			t++;
 			f = flags;
 
@@ -277,9 +289,9 @@ unsafe partial struct Blake3HashState : IBlakeIncremental
 
 			ref byte hout = ref MemoryMarshal.GetReference(hash);
 			if (hashrem is HashBytes)
-				Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<uint, byte>(ref cv[0]), HashBytes);
+				Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<uint, byte>(ref cv[2 * HashWords]), HashBytes);
 			else
-				Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<uint, byte>(ref cv[0]), (uint)hashrem);
+				Unsafe.CopyBlockUnaligned(ref hout, ref Unsafe.As<uint, byte>(ref cv[2 * HashWords]), (uint)hashrem);
 
 			hash = hash.Slice(hashrem);
 		}

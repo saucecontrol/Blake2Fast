@@ -7,46 +7,48 @@
 //	</auto-generated>
 //------------------------------------------------------------------------------
 
+using System.Runtime.CompilerServices;
+
 namespace Blake2Fast.Implementation;
 
 unsafe partial struct Blake3HashState
 {
-	private static void mixScalar(uint* sh, uint* m, uint* o, bool truncate)
+	private static void mixScalar(ref uint sh, ref uint m, ref uint st, ref uint o, bool truncate)
 	{
-		uint m00 = m[00];
-		uint m01 = m[01];
-		uint m02 = m[02];
-		uint m03 = m[03];
-		uint m04 = m[04];
-		uint m05 = m[05];
-		uint m06 = m[06];
-		uint m07 = m[07];
-		uint m08 = m[08];
-		uint m09 = m[09];
-		uint m10 = m[10];
-		uint m11 = m[11];
-		uint m12 = m[12];
-		uint m13 = m[13];
-		uint m14 = m[14];
-		uint m15 = m[15];
+		uint m00 = Unsafe.Add(ref m, 00);
+		uint m01 = Unsafe.Add(ref m, 01);
+		uint m02 = Unsafe.Add(ref m, 02);
+		uint m03 = Unsafe.Add(ref m, 03);
+		uint m04 = Unsafe.Add(ref m, 04);
+		uint m05 = Unsafe.Add(ref m, 05);
+		uint m06 = Unsafe.Add(ref m, 06);
+		uint m07 = Unsafe.Add(ref m, 07);
+		uint m08 = Unsafe.Add(ref m, 08);
+		uint m09 = Unsafe.Add(ref m, 09);
+		uint m10 = Unsafe.Add(ref m, 10);
+		uint m11 = Unsafe.Add(ref m, 11);
+		uint m12 = Unsafe.Add(ref m, 12);
+		uint m13 = Unsafe.Add(ref m, 13);
+		uint m14 = Unsafe.Add(ref m, 14);
+		uint m15 = Unsafe.Add(ref m, 15);
 
-		uint v00 = sh[0];
-		uint v01 = sh[1];
-		uint v02 = sh[2];
-		uint v03 = sh[3];
-		uint v04 = sh[4];
-		uint v05 = sh[5];
-		uint v06 = sh[6];
-		uint v07 = sh[7];
+		uint v00 = Unsafe.Add(ref sh, 0);
+		uint v01 = Unsafe.Add(ref sh, 1);
+		uint v02 = Unsafe.Add(ref sh, 2);
+		uint v03 = Unsafe.Add(ref sh, 3);
+		uint v04 = Unsafe.Add(ref sh, 4);
+		uint v05 = Unsafe.Add(ref sh, 5);
+		uint v06 = Unsafe.Add(ref sh, 6);
+		uint v07 = Unsafe.Add(ref sh, 7);
 
 		uint v08 = 0x6a09e667u;
 		uint v09 = 0xbb67ae85u;
 		uint v10 = 0x3c6ef372u;
 		uint v11 = 0xa54ff53au;
-		uint v12 = sh[8];  // tlo
-		uint v13 = sh[9];  // thi
-		uint v14 = sh[10]; // c
-		uint v15 = sh[11]; // f
+		uint v12 = Unsafe.Add(ref st, 0); // tlo
+		uint v13 = Unsafe.Add(ref st, 1); // thi
+		uint v14 = Unsafe.Add(ref st, 2); // c
+		uint v15 = Unsafe.Add(ref st, 3); // f
 
 		//ROUND 1
 		v00 += m00;
@@ -951,25 +953,25 @@ unsafe partial struct Blake3HashState
 		v06 ^= v11;
 		v06 = (v06 >>  7) ^ (v06 << 25);
 
-		o[0] = v00 ^ v08;
-		o[1] = v01 ^ v09;
-		o[2] = v02 ^ v10;
-		o[3] = v03 ^ v11;
-		o[4] = v04 ^ v12;
-		o[5] = v05 ^ v13;
-		o[6] = v06 ^ v14;
-		o[7] = v07 ^ v15;
+		Unsafe.Add(ref o, 0) = v00 ^ v08;
+		Unsafe.Add(ref o, 1) = v01 ^ v09;
+		Unsafe.Add(ref o, 2) = v02 ^ v10;
+		Unsafe.Add(ref o, 3) = v03 ^ v11;
+		Unsafe.Add(ref o, 4) = v04 ^ v12;
+		Unsafe.Add(ref o, 5) = v05 ^ v13;
+		Unsafe.Add(ref o, 6) = v06 ^ v14;
+		Unsafe.Add(ref o, 7) = v07 ^ v15;
 
 		if (!truncate)
 		{
-			o[ 8] = v08 ^ sh[0];
-			o[ 9] = v09 ^ sh[1];
-			o[10] = v10 ^ sh[2];
-			o[11] = v11 ^ sh[3];
-			o[12] = v12 ^ sh[4];
-			o[13] = v13 ^ sh[5];
-			o[14] = v14 ^ sh[6];
-			o[15] = v15 ^ sh[7];
+			Unsafe.Add(ref o,  8) = v08 ^ Unsafe.Add(ref sh, 0);
+			Unsafe.Add(ref o,  9) = v09 ^ Unsafe.Add(ref sh, 1);
+			Unsafe.Add(ref o, 10) = v10 ^ Unsafe.Add(ref sh, 2);
+			Unsafe.Add(ref o, 11) = v11 ^ Unsafe.Add(ref sh, 3);
+			Unsafe.Add(ref o, 12) = v12 ^ Unsafe.Add(ref sh, 4);
+			Unsafe.Add(ref o, 13) = v13 ^ Unsafe.Add(ref sh, 5);
+			Unsafe.Add(ref o, 14) = v14 ^ Unsafe.Add(ref sh, 6);
+			Unsafe.Add(ref o, 15) = v15 ^ Unsafe.Add(ref sh, 7);
 		}
 	}
 }

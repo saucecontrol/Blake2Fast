@@ -6,17 +6,35 @@
 //		Manual changes will be overwritten if the code is regenerated.
 //	</auto-generated>
 //------------------------------------------------------------------------------
+<#
+if (alg == b3) {
+#>
+
+using System.Runtime.CompilerServices;
+<#
+}
+#>
 
 namespace Blake2Fast.Implementation;
 
 unsafe partial struct Blake<#= alg.suffix #>HashState
 {
-	private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m<#= alg == b3 ? $", {alg.wtype}* o, bool truncate" : "" #>)
+<#
+if (alg == b3) {
+#>
+	private static void mixScalar(ref <#= alg.wtype #> sh, ref <#= alg.wtype #> m, ref <#= alg.wtype #> st, ref <#= alg.wtype #> o, bool truncate)
+<#
+} else {
+#>
+	private static void mixScalar(<#= alg.wtype #>* sh, <#= alg.wtype #>* m)
+<#
+}
+#>
 	{
 <#
 for (int i = 0; i < 16; i++) {
 #>
-		<#= alg.wtype #> m<#=$"{i:d2}"#> = m[<#=$"{i:d2}"#>];
+		<#= alg.wtype #> m<#=$"{i:d2}"#> = <#= alg == b3 ? $"Unsafe.Add(ref m, {i:d2})" : $"m[{i:d2}]" #>;
 <#
 }
 
@@ -26,10 +44,10 @@ WriteLine(null);
 mixvars (alg, alg == b3 ? new[] { 8, 9, 10, 11 } : new[] { 8, 9, 10, 11, 12, 13, 14, 15 });
 if (alg == b3) {
 #>
-		uint v12 = sh[8];  // tlo
-		uint v13 = sh[9];  // thi
-		uint v14 = sh[10]; // c
-		uint v15 = sh[11]; // f
+		uint v12 = Unsafe.Add(ref st, 0); // tlo
+		uint v13 = Unsafe.Add(ref st, 1); // thi
+		uint v14 = Unsafe.Add(ref st, 2); // c
+		uint v15 = Unsafe.Add(ref st, 3); // f
 <#
 } else {
 #>
@@ -66,7 +84,7 @@ for (int i = 0; i < alg.rounds; i++) {
 
 for (int i = 0; i < 8; i++) {
 #>
-		<#= alg == b3 ? "o" : "sh" #>[<#=i#>] <#= alg == b3 ? "=" : "^=" #> v<#=$"{i:d2}"#> ^ v<#=$"{i+8:d2}"#>;
+		<#= alg == b3 ? $"Unsafe.Add(ref o, {i}) =" : $"sh[{i}] ^=" #> v<#=$"{i:d2}"#> ^ v<#=$"{i+8:d2}"#>;
 <#
 }
 if (alg == b3) {
@@ -77,7 +95,7 @@ if (alg == b3) {
 <#
 	for (int i = 0; i < 8; i++) {
 #>
-			o[<#=$"{i+8,2}"#>] = v<#=$"{i+8:d2}"#> ^ sh[<#=i#>];
+			Unsafe.Add(ref o, <#=$"{i+8,2}"#>) = v<#=$"{i+8:d2}"#> ^ Unsafe.Add(ref sh, <#=i#>);
 <#
 	}
 #>
@@ -95,7 +113,7 @@ void mixvars(balg alg, int[] pos)
 {
 	foreach (int j in pos) {
 #>
-		<#= alg.wtype #> v<#=$"{j:d2}"#> = <#= j < 8 ? $"sh[{j}]" : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
+		<#= alg.wtype #> v<#=$"{j:d2}"#> = <#= j < 8 ? (alg == b3 ? $"Unsafe.Add(ref sh, {j})" : $"sh[{j}]") : string.Format(alg.ivfmt, alg.iv[j-8]) #>;
 <#+
 	}
 }
